@@ -193,6 +193,19 @@
   }
   .lightbox-content{max-width:min(720px, 90vw);max-height:80vh;display:flex;flex-direction:column;gap:12px;align-items:center}
   .lightbox-content img{max-width:100%;max-height:70vh;border-radius:10px;display:block}
+  .credit-row{display:flex;gap:6px;align-items:center}
+  .credit-row input{
+    padding:7px 9px;background:rgba(255,255,255,0.03);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-size:12px;outline:none;
+  }
+  .credit-row .credit-role{width:90px;flex-shrink:0}
+  .credit-row .credit-name{flex:1;min-width:0}
+  .credit-row .credit-url{flex:1;min-width:0}
+  .credit-row-remove{
+    flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
+    background:transparent;color:var(--text-dim);cursor:pointer;font-size:14px;line-height:1;
+  }
+  .credit-row-remove:hover{color:var(--danger);border-color:var(--danger)}
   .lightbox-actions{display:flex;gap:8px}
   .lightbox-close{
     position:absolute;top:20px;right:24px;
@@ -314,14 +327,12 @@
   <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
   <div class="lightbox-content">
     <img id="lightbox-img" src="" alt="">
-    <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px">
-      <div class="field" style="margin:0"><label style="color:var(--text-dim)">Artist</label><input id="lightbox-artist" placeholder="Who drew this"></div>
-      <div class="field" style="margin:0"><label style="color:var(--text-dim)">Credit link</label><input id="lightbox-credit-url" placeholder="https://"></div>
-    </div>
+    <div style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto" id="lightbox-credits-list"></div>
+    <button class="btn ghost" id="lightbox-add-credit" style="align-self:flex-start;font-size:13px">+ Add credit</button>
     <div class="lightbox-actions">
       <button class="btn danger" id="lightbox-delete">Delete</button>
       <button class="btn" id="lightbox-copy">Copy URL</button>
-      <button class="btn" id="lightbox-save">Save credit</button>
+      <button class="btn" id="lightbox-save">Save credits</button>
       <button class="btn primary" id="lightbox-insert">Insert into HTML</button>
     </div>
   </div>
@@ -582,19 +593,51 @@ function escapeAttr(str) {
 }
 
 let lightboxImage = null;
+let lightboxCredits = []; // working copy: [{role, name, url}, ...] — edited live, saved on demand
 
 function openLightbox(image) {
   lightboxImage = image;
+  lightboxCredits = (image.credits || []).map((c) => ({ ...c })); // clone so cancel-by-closing doesn't mutate
   document.getElementById("lightbox-img").src = image.url;
   document.getElementById("lightbox-img").alt = image.name;
-  document.getElementById("lightbox-artist").value = image.artist || "";
-  document.getElementById("lightbox-credit-url").value = image.credit_url || "";
+  if (lightboxCredits.length === 0) lightboxCredits.push({ role: "", name: "", url: "" });
+  renderCreditRows();
   document.getElementById("lightbox").style.display = "flex";
 }
 function closeLightbox() {
   document.getElementById("lightbox").style.display = "none";
   lightboxImage = null;
 }
+
+function renderCreditRows() {
+  const list = document.getElementById("lightbox-credits-list");
+  list.innerHTML = lightboxCredits.map((c, i) => `
+    <div class="credit-row" data-index="${i}">
+      <input class="credit-role" placeholder="Role" value="${escapeAttr(c.role || "")}" data-field="role">
+      <input class="credit-name" placeholder="Name" value="${escapeAttr(c.name || "")}" data-field="name">
+      <input class="credit-url" placeholder="Link (optional)" value="${escapeAttr(c.url || "")}" data-field="url">
+      <button type="button" class="credit-row-remove" title="Remove">&times;</button>
+    </div>
+  `).join("");
+
+  list.querySelectorAll(".credit-row").forEach((row) => {
+    const i = Number(row.dataset.index);
+    row.querySelectorAll("input").forEach((input) => {
+      input.addEventListener("input", () => {
+        lightboxCredits[i][input.dataset.field] = input.value;
+      });
+    });
+    row.querySelector(".credit-row-remove").addEventListener("click", () => {
+      lightboxCredits.splice(i, 1);
+      renderCreditRows();
+    });
+  });
+}
+
+document.getElementById("lightbox-add-credit").addEventListener("click", () => {
+  lightboxCredits.push({ role: "", name: "", url: "" });
+  renderCreditRows();
+});
 
 document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
 document.getElementById("lightbox").addEventListener("click", (e) => {
@@ -612,18 +655,17 @@ document.getElementById("lightbox-copy").addEventListener("click", async () => {
 
 document.getElementById("lightbox-save").addEventListener("click", async () => {
   if (!lightboxImage) return;
-  const artist = document.getElementById("lightbox-artist").value;
-  const credit_url = document.getElementById("lightbox-credit-url").value;
+  // Drop fully-empty rows (someone hit + Add credit and changed their mind) before saving.
+  const credits = lightboxCredits.filter((c) => c.role.trim() || c.name.trim() || c.url.trim());
   const slug = document.getElementById("f-slug").value.trim();
   const res = await fetch(`${API_BASE}/api/gallery/${slug}/${lightboxImage.id}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: lightboxImage.name, artist, credit_url }),
+    body: JSON.stringify({ name: lightboxImage.name, credits }),
   });
   if (res.ok) {
-    lightboxImage.artist = artist;
-    lightboxImage.credit_url = credit_url;
+    lightboxImage.credits = credits;
     flashButton("lightbox-save", "Saved!");
   } else {
     flashButton("lightbox-save", "Failed");
