@@ -51,6 +51,25 @@
   #profile-card{padding:0;overflow:hidden}
   #profile-body{padding:28px}
 
+  #gallery-section{padding:24px 28px;margin-top:20px}
+  #gallery-section h2{font-size:14px;font-weight:600;margin:0 0 14px}
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:10px}
+  .gallery-thumb{
+    aspect-ratio:1;border-radius:10px;overflow:hidden;
+    border:1px solid var(--border);cursor:pointer;padding:0;background:none;
+  }
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .gallery-thumb:hover{border-color:var(--border-strong)}
+
+  .lightbox-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.8);
+    display:flex;align-items:center;justify-content:center;padding:32px;z-index:1000;
+  }
+  .lightbox-content{max-width:min(720px, 90vw);max-height:85vh;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .lightbox-content img{max-width:100%;max-height:70vh;border-radius:10px;display:block}
+  .lightbox-credit{font-size:13px;color:var(--text-dim)}
+  .lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+
   /* Fallback baseline styling for profile_html — a saved profile's own CSS
      (profile_css_scoped) is injected after this and takes precedence. */
   .char-slot{line-height:1.6;font-size:15px}
@@ -118,6 +137,19 @@
     <div id="profile-state" class="state" style="display:none"></div>
     <div id="profile-body" style="display:none"></div>
   </div>
+
+  <div id="gallery-section" class="glass" style="display:none">
+    <h2>Gallery</h2>
+    <div class="gallery-grid" id="gallery-grid"></div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightbox" style="display:none">
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
+  <div class="lightbox-content">
+    <img id="lightbox-img" src="" alt="">
+    <div class="lightbox-credit" id="lightbox-credit"></div>
+  </div>
 </div>
 
 <script>
@@ -141,10 +173,59 @@ async function loadProfile(slug) {
     const c = await res.json();
     renderHeader(c);
     renderProfile(c);
+    loadGallery(slug);
   } catch {
     showState("Couldn't load this profile right now.");
   }
 }
+
+async function loadGallery(slug) {
+  try {
+    const res = await fetch(`${API_BASE}/api/gallery/${encodeURIComponent(slug)}`);
+    if (!res.ok) return;
+    const items = await res.json();
+    if (!items.length) return;
+
+    const section = document.getElementById("gallery-section");
+    const grid = document.getElementById("gallery-grid");
+    grid.innerHTML = items.map((img, i) => `
+      <button type="button" class="gallery-thumb" data-index="${i}">
+        <img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy">
+      </button>
+    `).join("");
+    grid.querySelectorAll(".gallery-thumb").forEach((btn) => {
+      btn.addEventListener("click", () => openLightbox(items[Number(btn.dataset.index)]));
+    });
+    section.style.display = "block";
+  } catch {
+    // Gallery is a bonus section — fail quietly if it doesn't load.
+  }
+}
+
+function openLightbox(image) {
+  document.getElementById("lightbox-img").src = image.url;
+  document.getElementById("lightbox-img").alt = image.name;
+  const creditEl = document.getElementById("lightbox-credit");
+  if (image.artist) {
+    creditEl.innerHTML = image.credit_url
+      ? `Art by <a href="${escapeAttr(image.credit_url)}" target="_blank" rel="noopener">${escapeHtml(image.artist)}</a>`
+      : `Art by ${escapeHtml(image.artist)}`;
+    creditEl.style.display = "block";
+  } else {
+    creditEl.style.display = "none";
+  }
+  document.getElementById("lightbox").style.display = "flex";
+}
+function closeLightbox() {
+  document.getElementById("lightbox").style.display = "none";
+}
+document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+document.getElementById("lightbox").addEventListener("click", (e) => {
+  if (e.target.id === "lightbox") closeLightbox();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.getElementById("lightbox").style.display !== "none") closeLightbox();
+});
 
 function renderHeader(c) {
   document.title = c.name ? `${c.name} — character profile` : "Character profile";
