@@ -32,7 +32,7 @@
   .wrap{max-width:1040px;margin:0 auto;padding:48px 20px 64px}
 
   #site-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
-  #editor-shortcut{font-size:13px;color:var(--text-dim)}
+  #editor-shortcut{font-size:13px;color:var(--text-dim);display:none}
   #editor-shortcut:hover{color:var(--text)}
   #site-title{font-size:28px;font-weight:600;margin:0}
   #site-subtitle{font-size:14px;color:var(--text-dim);margin:0 0 32px}
@@ -124,6 +124,16 @@ const API_BASE = "https://thebrewery.crysthigpen.workers.dev"; // <-- set this, 
 let activeCollection = null;
 
 loadMembers();
+showEditorShortcutIfAuthed();
+
+async function showEditorShortcutIfAuthed() {
+  try {
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    if (res.ok) document.getElementById("editor-shortcut").style.display = "inline";
+  } catch {
+    // Not logged in, or the check failed — leave it hidden either way.
+  }
+}
 
 async function loadMembers() {
   try {
