@@ -164,6 +164,42 @@
   }
   .upload-zone:hover{border-color:var(--accent)}
 
+  .gallery-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+    margin-top:10px;
+  }
+  .gallery-thumb{
+    position:relative;
+    aspect-ratio:1;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,0.03);
+    cursor:pointer;
+    padding:0;
+  }
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .gallery-thumb:hover{border-color:var(--accent)}
+  .gallery-thumb.pending{display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-dim)}
+
+  .lightbox-overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.75);
+    display:flex;align-items:center;justify-content:center;
+    padding:32px;
+    z-index:1000;
+  }
+  .lightbox-content{max-width:min(720px, 90vw);max-height:80vh;display:flex;flex-direction:column;gap:12px;align-items:center}
+  .lightbox-content img{max-width:100%;max-height:70vh;border-radius:10px;display:block}
+  .lightbox-actions{display:flex;gap:8px}
+  .lightbox-close{
+    position:absolute;top:20px;right:24px;
+    background:none;border:none;color:#fff;font-size:22px;cursor:pointer;
+    line-height:1;
+  }
+
   .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .toggle-row label{font-size:13px}
   .switch{
@@ -246,7 +282,8 @@
       <h2 style="margin-top:22px">Image upload</h2>
       <div class="upload-zone" id="upload-zone">Click or drop an image</div>
       <input type="file" id="upload-input" accept="image/*" style="display:none">
-      <div id="upload-result" style="font-size:12px;margin-top:8px;color:var(--text-dim);word-break:break-all"></div>
+      <div id="upload-error" style="font-size:12px;margin-top:8px;color:var(--danger);display:none">Upload failed.</div>
+      <div class="gallery-grid" id="upload-gallery"></div>
     </section>
 
     <!-- Middle: code editors -->
@@ -271,6 +308,23 @@
     <button class="btn danger" id="delete-btn">Delete</button>
     <button class="btn primary" id="save-btn">Save changes</button>
   </footer>
+</div>
+
+<div class="lightbox-overlay" id="lightbox" style="display:none">
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
+  <div class="lightbox-content">
+    <img id="lightbox-img" src="" alt="">
+    <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px">
+      <div class="field" style="margin:0"><label style="color:#c8ccd6">Artist</label><input id="lightbox-artist" placeholder="Who drew this"></div>
+      <div class="field" style="margin:0"><label style="color:#c8ccd6">Credit link</label><input id="lightbox-credit-url" placeholder="https://"></div>
+    </div>
+    <div class="lightbox-actions">
+      <button class="btn danger" id="lightbox-delete">Delete</button>
+      <button class="btn" id="lightbox-copy">Copy URL</button>
+      <button class="btn" id="lightbox-save">Save credit</button>
+      <button class="btn primary" id="lightbox-insert">Insert into HTML</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -418,6 +472,7 @@ async function loadCharacter(slug) {
   setVisibilitySwitch(isPublic);
   updatePreview();
   markClean();
+  loadGallery(c.slug);
 }
 
 function resetForm() {
@@ -429,6 +484,7 @@ function resetForm() {
   setVisibilitySwitch(false);
   updatePreview();
   markClean();
+  loadGallery(null);
 }
 
 document.getElementById("save-btn").addEventListener("click", async () => {
@@ -468,26 +524,153 @@ function setVisibilitySwitch(val) {
   document.getElementById("visibility-switch").classList.toggle("on", val);
 }
 
-// ---------- Upload ----------
+// ---------- Upload gallery + lightbox (persistent, per character) ----------
+
+let galleryItems = []; // [{id, url, name, artist, credit_url}] — loaded from /api/gallery/:slug
+
+async function loadGallery(slug) {
+  galleryItems = [];
+  if (!slug) return renderGallery();
+  try {
+    const res = await fetch(`${API_BASE}/api/gallery/${encodeURIComponent(slug)}`, { credentials: "include" });
+    galleryItems = res.ok ? await res.json() : [];
+  } catch {
+    galleryItems = [];
+  }
+  renderGallery();
+}
 
 const uploadZone = document.getElementById("upload-zone");
 const uploadInput = document.getElementById("upload-input");
-uploadZone.addEventListener("click", () => uploadInput.click());
+uploadZone.addEventListener("click", () => {
+  if (!document.getElementById("f-slug").value.trim()) {
+    alert("Give the character a slug first — the gallery is tied to it.");
+    return;
+  }
+  uploadInput.click();
+});
 uploadInput.addEventListener("change", async () => {
   const file = uploadInput.files[0];
-  if (!file) return;
+  const slug = document.getElementById("f-slug").value.trim();
+  if (!file || !slug) return;
+
+  document.getElementById("upload-error").style.display = "none";
+  renderGallery(true); // show a pending tile while this upload is in flight
+
   const form = new FormData();
   form.append("file", file);
-  uploadZone.textContent = "Uploading…";
-  const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
-  if (res.ok) {
-    const { url } = await res.json();
-    document.getElementById("upload-result").innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
-  } else {
-    document.getElementById("upload-result").textContent = "Upload failed.";
+  form.append("slug", slug);
+  try {
+    const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
+    if (!res.ok) throw new Error("upload failed");
+    const item = await res.json();
+    galleryItems.push(item);
+  } catch {
+    document.getElementById("upload-error").style.display = "block";
   }
-  uploadZone.textContent = "Click or drop an image";
+  uploadInput.value = "";
+  renderGallery();
 });
+
+function renderGallery(pending) {
+  const gallery = document.getElementById("upload-gallery");
+  const pendingThumb = pending
+    ? `<button type="button" class="gallery-thumb pending">Uploading…</button>`
+    : "";
+  gallery.innerHTML = pendingThumb + galleryItems.map((img, i) => `
+    <button type="button" class="gallery-thumb" data-index="${i}">
+      <img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy">
+    </button>
+  `).join("");
+  gallery.querySelectorAll(".gallery-thumb[data-index]").forEach((btn) => {
+    btn.addEventListener("click", () => openLightbox(galleryItems[Number(btn.dataset.index)]));
+  });
+}
+
+function escapeAttr(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+let lightboxImage = null;
+
+function openLightbox(image) {
+  lightboxImage = image;
+  document.getElementById("lightbox-img").src = image.url;
+  document.getElementById("lightbox-img").alt = image.name;
+  document.getElementById("lightbox-artist").value = image.artist || "";
+  document.getElementById("lightbox-credit-url").value = image.credit_url || "";
+  document.getElementById("lightbox").style.display = "flex";
+}
+function closeLightbox() {
+  document.getElementById("lightbox").style.display = "none";
+  lightboxImage = null;
+}
+
+document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+document.getElementById("lightbox").addEventListener("click", (e) => {
+  if (e.target.id === "lightbox") closeLightbox(); // click outside the image
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.getElementById("lightbox").style.display !== "none") closeLightbox();
+});
+
+document.getElementById("lightbox-copy").addEventListener("click", async () => {
+  if (!lightboxImage) return;
+  await navigator.clipboard.writeText(lightboxImage.url);
+  flashButton("lightbox-copy", "Copied!");
+});
+
+document.getElementById("lightbox-save").addEventListener("click", async () => {
+  if (!lightboxImage) return;
+  const artist = document.getElementById("lightbox-artist").value;
+  const credit_url = document.getElementById("lightbox-credit-url").value;
+  const slug = document.getElementById("f-slug").value.trim();
+  const res = await fetch(`${API_BASE}/api/gallery/${slug}/${lightboxImage.id}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: lightboxImage.name, artist, credit_url }),
+  });
+  if (res.ok) {
+    lightboxImage.artist = artist;
+    lightboxImage.credit_url = credit_url;
+    flashButton("lightbox-save", "Saved!");
+  } else {
+    flashButton("lightbox-save", "Failed");
+  }
+});
+
+document.getElementById("lightbox-delete").addEventListener("click", async () => {
+  if (!lightboxImage) return;
+  if (!confirm("Delete this image? This can't be undone.")) return;
+  const slug = document.getElementById("f-slug").value.trim();
+  const res = await fetch(`${API_BASE}/api/gallery/${slug}/${lightboxImage.id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (res.ok) {
+    galleryItems = galleryItems.filter((img) => img.id !== lightboxImage.id);
+    renderGallery();
+    closeLightbox();
+  } else {
+    flashButton("lightbox-delete", "Failed");
+  }
+});
+
+document.getElementById("lightbox-insert").addEventListener("click", () => {
+  if (!lightboxImage || !cmHtml) return;
+  const tag = `<img src="${lightboxImage.url}" alt="${escapeAttr(lightboxImage.name)}">`;
+  const cursor = cmHtml.getCursor();
+  cmHtml.replaceRange(tag, cursor);
+  closeLightbox();
+});
+
+function flashButton(id, message) {
+  const btn = document.getElementById(id);
+  const original = btn.textContent;
+  btn.textContent = message;
+  setTimeout(() => { btn.textContent = original; }, 1200);
+}
 
 // ---------- Dirty state ----------
 
