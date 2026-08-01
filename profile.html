@@ -177,8 +177,20 @@ async function loadProfile(slug) {
     renderHeader(c);
     renderProfile(c);
     loadGallery(slug);
+    showEditLinkIfAuthed(c.slug);
   } catch {
     showState("Couldn't load this profile right now.");
+  }
+}
+
+async function showEditLinkIfAuthed(slug) {
+  try {
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    if (!res.ok) return; // not logged in — leave the edit link hidden
+    document.getElementById("edit-link").href = `editor.html?slug=${encodeURIComponent(slug)}`;
+    document.getElementById("edit-link-wrap").style.display = "inline-block";
+  } catch {
+    // Session check failed — err on the side of not showing the edit link.
   }
 }
 
@@ -238,10 +250,6 @@ document.addEventListener("keydown", (e) => {
 function renderHeader(c) {
   document.title = c.name ? `${c.name} — character profile` : "Character profile";
   document.getElementById("char-name").textContent = c.name || c.slug;
-
-  const editLink = document.getElementById("edit-link");
-  editLink.href = `editor.html?slug=${encodeURIComponent(c.slug)}`;
-  document.getElementById("edit-link-wrap").style.display = "inline-block";
 
   const credits = [];
   if (c.artist) credits.push(creditItem("Art", c.artist, c.credit_url));
