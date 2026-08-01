@@ -315,8 +315,8 @@
   <div class="lightbox-content">
     <img id="lightbox-img" src="" alt="">
     <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px">
-      <div class="field" style="margin:0"><label style="color:#c8ccd6">Artist</label><input id="lightbox-artist" placeholder="Who drew this"></div>
-      <div class="field" style="margin:0"><label style="color:#c8ccd6">Credit link</label><input id="lightbox-credit-url" placeholder="https://"></div>
+      <div class="field" style="margin:0"><label style="color:var(--text-dim)">Artist</label><input id="lightbox-artist" placeholder="Who drew this"></div>
+      <div class="field" style="margin:0"><label style="color:var(--text-dim)">Credit link</label><input id="lightbox-credit-url" placeholder="https://"></div>
     </div>
     <div class="lightbox-actions">
       <button class="btn danger" id="lightbox-delete">Delete</button>
@@ -418,30 +418,18 @@ function initEditors() {
 }
 
 function updatePreview() {
-  const slug = document.getElementById("f-slug").value || "preview";
   const html = cmHtml.getValue();
   const css = cmCss.getValue();
+  // Full-page reach on purpose — the iframe is its own isolated document, so there's no
+  // leak risk, and this needs to match what profile.html actually renders (raw, unscoped
+  // profile_css) rather than the old boxed .char-{slug}-prefixed preview.
   const doc = `<!DOCTYPE html><html><head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-    body{margin:0;font-family:sans-serif;background:#fff}
-    .char-${slug} { all: initial; display:block; font-family:sans-serif; }
-    ${scopeCss(css, `char-${slug}`)}
-  </style></head><body><div class="char-${slug}">${html}</div></body></html>`;
+    body{margin:0;font-family:sans-serif;background:#fff;color:#111}
+    ${css}
+  </style></head><body>${html}</body></html>`;
   document.getElementById("preview-frame").srcdoc = doc;
-}
-
-// Naive CSS scoping: prefixes each top-level selector with the scope class.
-// Good enough for a single-author editor; swap for a real CSS parser (e.g. postcss-prefix-selector)
-// if profiles ever get complex nested/media-query rules.
-function scopeCss(css, scopeClass) {
-  return css.replace(/(^|\})\s*([^{}]+)\s*\{/g, (match, brace, selector) => {
-    const scoped = selector
-      .split(",")
-      .map((s) => `.${scopeClass} ${s.trim()}`)
-      .join(", ");
-    return `${brace} ${scoped} {`;
-  });
 }
 
 // ---------- Character list / load / save ----------
