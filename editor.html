@@ -327,7 +327,7 @@
   <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
   <div class="lightbox-content">
     <img id="lightbox-img" src="" alt="">
-    <div style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto" id="lightbox-credits-list"></div>
+    <div style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px" id="lightbox-credits-list"></div>
     <button class="btn ghost" id="lightbox-add-credit" style="align-self:flex-start;font-size:13px">+ Add credit</button>
     <div class="lightbox-actions">
       <button class="btn danger" id="lightbox-delete">Delete</button>
@@ -637,6 +637,12 @@ function renderCreditRows() {
 document.getElementById("lightbox-add-credit").addEventListener("click", () => {
   lightboxCredits.push({ role: "", name: "", url: "" });
   renderCreditRows();
+  const rows = document.querySelectorAll(".credit-row");
+  const newRow = rows[rows.length - 1];
+  if (newRow) {
+    newRow.scrollIntoView({ block: "nearest" });
+    newRow.querySelector(".credit-role")?.focus();
+  }
 });
 
 document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
