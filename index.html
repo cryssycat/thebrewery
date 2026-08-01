@@ -31,7 +31,10 @@
 
   .wrap{max-width:1040px;margin:0 auto;padding:48px 20px 64px}
 
-  #site-title{font-size:28px;font-weight:600;margin:0 0 6px}
+  #site-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  #editor-shortcut{font-size:13px;color:var(--text-dim)}
+  #editor-shortcut:hover{color:var(--text)}
+  #site-title{font-size:28px;font-weight:600;margin:0}
   #site-subtitle{font-size:14px;color:var(--text-dim);margin:0 0 32px}
 
   .glass{
@@ -95,7 +98,10 @@
 <body>
 
 <div class="wrap">
-  <h1 id="site-title">Character hub</h1>
+  <div id="site-header">
+    <h1 id="site-title">Character hub</h1>
+    <a id="editor-shortcut" href="editor.html">Editor &rarr;</a>
+  </div>
   <p id="site-subtitle">Browse characters by member.</p>
 
   <div id="tabs">
