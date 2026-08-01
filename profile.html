@@ -68,7 +68,8 @@
   }
   .lightbox-content{max-width:min(720px, 90vw);max-height:85vh;display:flex;flex-direction:column;gap:10px;align-items:center}
   .lightbox-content img{max-width:100%;max-height:70vh;border-radius:10px;display:block}
-  .lightbox-credit{font-size:13px;color:var(--text-dim)}
+  .lightbox-credit{font-size:13px;color:var(--text-dim);text-align:center}
+  .lightbox-credit div{margin-bottom:2px}
   .lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
 
   /* Fallback baseline styling for profile_html — a saved profile's own CSS
@@ -208,10 +209,15 @@ function openLightbox(image) {
   document.getElementById("lightbox-img").src = image.url;
   document.getElementById("lightbox-img").alt = image.name;
   const creditEl = document.getElementById("lightbox-credit");
-  if (image.artist) {
-    creditEl.innerHTML = image.credit_url
-      ? `Art by <a href="${escapeAttr(image.credit_url)}" target="_blank" rel="noopener">${escapeHtml(image.artist)}</a>`
-      : `Art by ${escapeHtml(image.artist)}`;
+  const credits = image.credits || [];
+  if (credits.length > 0) {
+    creditEl.innerHTML = credits.map((c) => {
+      const label = c.role ? `${escapeHtml(c.role)}: ` : "";
+      const nameHtml = c.url
+        ? `<a href="${escapeAttr(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.name)}</a>`
+        : escapeHtml(c.name);
+      return `<div>${label}${nameHtml}</div>`;
+    }).join("");
     creditEl.style.display = "block";
   } else {
     creditEl.style.display = "none";
