@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character profile</title>
+<style>
+  :root{
+    --bg-deep:#0b1120;
+    --bg-panel:rgba(255,255,255,0.04);
+    --border:rgba(255,255,255,0.09);
+    --border-strong:rgba(255,255,255,0.18);
+    --text:#e7ecf5;
+    --text-dim:#8b94a8;
+    --accent:#7f9cf5;
+    --radius:14px;
+    font-family:-apple-system,"Segoe UI",Inter,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(127,156,245,0.10), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(127,156,245,0.06), transparent 45%),
+      var(--bg-deep);
+    color:var(--text);
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 64px}
+
+  .back-link{font-size:13px;color:var(--text-dim);display:inline-block;margin-bottom:20px}
+
+  .glass{
+    background:var(--bg-panel);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+  }
+
+  #header-card{padding:24px 28px;margin-bottom:20px}
+  #char-name{font-size:24px;font-weight:600;margin:0 0 14px}
+
+  .credits{display:flex;flex-wrap:wrap;gap:10px 22px}
+  .credit-item{font-size:13px;color:var(--text-dim)}
+  .credit-item strong{color:var(--text);font-weight:500}
+
+  #profile-card{padding:0;overflow:hidden}
+  #profile-body{padding:28px}
+
+  /* Fallback baseline styling for profile_html — a saved profile's own CSS
+     (profile_css_scoped) is injected after this and takes precedence. */
+  .char-slot{line-height:1.6;font-size:15px}
+  .char-slot img{max-width:100%;border-radius:8px}
+  .char-slot h1,.char-slot h2,.char-slot h3{font-weight:600}
+
+  .state{
+    text-align:center;
+    padding:64px 24px;
+    color:var(--text-dim);
+    font-size:14px;
+  }
+  .state .big{font-size:16px;color:var(--text);margin-bottom:6px}
+
+  .skeleton{
+    height:18px;border-radius:6px;
+    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+    margin-bottom:10px;
+  }
+  @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a class="back-link" href="/">&larr; Back to hub</a>
+
+  <div id="header-card" class="glass">
+    <div id="header-loading">
+      <div class="skeleton" style="width:220px;height:26px;margin-bottom:16px"></div>
+      <div class="skeleton" style="width:340px"></div>
+    </div>
+    <div id="header-content" style="display:none">
+      <h1 id="char-name"></h1>
+      <div class="credits" id="credits-row"></div>
+    </div>
+  </div>
+
+  <div id="profile-card" class="glass">
+    <div id="profile-state" class="state" style="display:none"></div>
+    <div id="profile-body" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://your-worker.your-subdomain.workers.dev"; // <-- set this, matches editor.html
+
+const params = new URLSearchParams(window.location.search);
+const slug = params.get("slug");
+
+if (!slug) {
+  showState("No character specified.");
+} else {
+  loadProfile(slug);
+}
+
+async function loadProfile(slug) {
+  try {
+    const res = await fetch(`${API_BASE}/api/characters/${encodeURIComponent(slug)}`);
+    if (res.status === 404) return showState("This character doesn't exist or isn't public yet.");
+    if (!res.ok) return showState("Couldn't load this profile right now.");
+
+    const c = await res.json();
+    renderHeader(c);
+    renderProfile(c);
+  } catch {
+    showState("Couldn't load this profile right now.");
+  }
+}
+
+function renderHeader(c) {
+  document.title = c.name ? `${c.name} — character profile` : "Character profile";
+  document.getElementById("char-name").textContent = c.name || c.slug;
+
+  const credits = [];
+  if (c.artist) credits.push(creditItem("Art", c.artist, c.credit_url));
+  if (c.designer) credits.push(creditItem("Design", c.designer, c.credit_url));
+  if (c.owner_credit) credits.push(creditItem("Owned by", c.owner_credit));
+  document.getElementById("credits-row").innerHTML = credits.join("");
+
+  document.getElementById("header-loading").style.display = "none";
+  document.getElementById("header-content").style.display = "block";
+}
+
+function creditItem(label, name, url) {
+  const value = url ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>` : escapeHtml(name);
+  return `<span class="credit-item">${label}: <strong>${value}</strong></span>`;
+}
+
+function renderProfile(c) {
+  const body = document.getElementById("profile-body");
+
+  // Scope container: matches the char-{slug} class the editor's preview and the
+  // Worker's profile_css_scoped both prefix against.
+  const container = document.createElement("div");
+  container.className = `char-slot char-${c.slug}`;
+  container.innerHTML = c.profile_html || "<p>This character doesn't have a profile yet.</p>";
+
+  const styleTag = document.createElement("style");
+  styleTag.textContent = c.profile_css_scoped || "";
+
+  body.innerHTML = "";
+  body.appendChild(styleTag);
+  body.appendChild(container);
+  body.style.display = "block";
+}
+
+function showState(message) {
+  document.getElementById("header-loading").style.display = "none";
+  const stateEl = document.getElementById("profile-state");
+  stateEl.innerHTML = `<div class="big">${escapeHtml(message)}</div><a href="/">Back to hub</a>`;
+  stateEl.style.display = "block";
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function escapeAttr(str) { return escapeHtml(str); }
+</script>
+</body>
+</html>

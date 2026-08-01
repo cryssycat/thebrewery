@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member gallery</title>
+<style>
+  :root{
+    --bg-deep:#0b1120;
+    --bg-panel:rgba(255,255,255,0.04);
+    --border:rgba(255,255,255,0.09);
+    --border-strong:rgba(255,255,255,0.18);
+    --text:#e7ecf5;
+    --text-dim:#8b94a8;
+    --accent:#7f9cf5;
+    --radius:14px;
+    font-family:-apple-system,"Segoe UI",Inter,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(127,156,245,0.10), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(127,156,245,0.06), transparent 45%),
+      var(--bg-deep);
+    color:var(--text);
+  }
+  a{color:var(--accent);text-decoration:none}
+
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+  .back-link{font-size:13px;color:var(--text-dim);display:inline-block;margin-bottom:20px}
+  .back-link:hover{text-decoration:underline}
+
+  #member-title{font-size:26px;font-weight:600;margin:0 0 6px}
+  #member-count{font-size:13px;color:var(--text-dim);margin:0 0 28px}
+
+  .glass{
+    background:var(--bg-panel);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+    gap:16px;
+  }
+
+  .card{
+    display:block;
+    padding:18px;
+    transition:border-color .15s, transform .1s;
+  }
+  .card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
+  .card-name{font-size:15px;font-weight:500;color:var(--text);margin:0 0 6px}
+  .card-meta{font-size:12px;color:var(--text-dim)}
+
+  .state{
+    text-align:center;
+    padding:64px 24px;
+    color:var(--text-dim);
+    font-size:14px;
+  }
+  .state .big{font-size:16px;color:var(--text);margin-bottom:6px}
+
+  .skeleton-card{height:76px;border-radius:var(--radius)}
+  .skeleton{
+    height:100%;width:100%;border-radius:var(--radius);
+    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+  }
+  @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a class="back-link" href="/">&larr; Back to hub</a>
+
+  <div id="header">
+    <div class="skeleton" style="width:220px;height:28px;border-radius:6px;margin-bottom:10px"></div>
+  </div>
+
+  <div id="state" class="state" style="display:none"></div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const API_BASE = "https://your-worker.your-subdomain.workers.dev"; // <-- set this, matches editor.html / profile.html
+
+const params = new URLSearchParams(window.location.search);
+const collection = params.get("collection");
+
+if (!collection) {
+  showState("No member specified.");
+} else {
+  loadMember(collection);
+}
+
+async function loadMember(collection) {
+  document.getElementById("grid").innerHTML = Array(6).fill(
+    '<div class="glass card skeleton-card"><div class="skeleton"></div></div>'
+  ).join("");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`);
+    if (!res.ok) return showState("Couldn't load this gallery right now.");
+    const characters = await res.json();
+    renderHeader(collection, characters.length);
+    renderGrid(characters);
+  } catch {
+    showState("Couldn't load this gallery right now.");
+  }
+}
+
+function renderHeader(collection, count) {
+  document.title = `${collection} — character gallery`;
+  document.getElementById("header").innerHTML = `
+    <h1 id="member-title">${escapeHtml(collection)}</h1>
+    <p id="member-count">${count} public ${count === 1 ? "character" : "characters"}</p>
+  `;
+}
+
+function renderGrid(characters) {
+  const grid = document.getElementById("grid");
+  if (characters.length === 0) {
+    grid.innerHTML = "";
+    return showState("No public characters here yet.");
+  }
+  grid.innerHTML = characters.map((c) => `
+    <a class="glass card" href="profile.html?slug=${encodeURIComponent(c.slug)}">
+      <p class="card-name">${escapeHtml(c.name || c.slug)}</p>
+      <p class="card-meta">${c.artist ? "Art by " + escapeHtml(c.artist) : "&nbsp;"}</p>
+    </a>
+  `).join("");
+}
+
+function showState(message) {
+  document.getElementById("grid").innerHTML = "";
+  const stateEl = document.getElementById("state");
+  stateEl.innerHTML = `<div class="big">${escapeHtml(message)}</div><a href="/">Back to hub</a>`;
+  stateEl.style.display = "block";
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+</script>
+</body>
+</html>
