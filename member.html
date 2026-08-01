@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Character hub</title>
+<title>Member gallery</title>
 <style>
   :root{
     --bg-deep:#0b1120;
@@ -13,7 +13,6 @@
     --text:#e7ecf5;
     --text-dim:#8b94a8;
     --accent:#7f9cf5;
-    --accent-dim:#4c5f9c;
     --radius:14px;
     font-family:-apple-system,"Segoe UI",Inter,sans-serif;
   }
@@ -29,13 +28,12 @@
   }
   a{color:var(--accent);text-decoration:none}
 
-  .wrap{max-width:1040px;margin:0 auto;padding:48px 20px 64px}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+  .back-link{font-size:13px;color:var(--text-dim);display:inline-block;margin-bottom:20px}
+  .back-link:hover{text-decoration:underline}
 
-  #site-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
-  #editor-shortcut{font-size:13px;color:var(--text-dim);display:none}
-  #editor-shortcut:hover{color:var(--text)}
-  #site-title{font-size:28px;font-weight:600;margin:0}
-  #site-subtitle{font-size:14px;color:var(--text-dim);margin:0 0 32px}
+  #member-title{font-size:26px;font-weight:600;margin:0 0 6px}
+  #member-count{font-size:13px;color:var(--text-dim);margin:0 0 28px}
 
   .glass{
     background:var(--bg-panel);
@@ -45,52 +43,37 @@
     border-radius:var(--radius);
   }
 
-  /* Tab switcher */
-  #tabs{
-    display:flex;
-    gap:8px;
-    margin-bottom:24px;
-    flex-wrap:wrap;
-  }
-  .tab-btn{
-    padding:9px 18px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    background:transparent;
-    color:var(--text-dim);
-    font-size:13px;
-    font-weight:500;
-    cursor:pointer;
-    transition:background .15s, color .15s, border-color .15s;
-  }
-  .tab-btn:hover{border-color:var(--border-strong);color:var(--text)}
-  .tab-btn.active{background:var(--accent-dim);border-color:var(--accent-dim);color:#fff}
-
-  #panel-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
-  #panel-title{font-size:18px;font-weight:600;margin:0}
-  #panel-link{font-size:13px}
-
   .grid{
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
     gap:16px;
   }
 
-  .card{display:block;padding:18px;transition:border-color .15s, transform .1s}
+  .card{
+    display:block;
+    padding:18px;
+    transition:border-color .15s, transform .1s;
+  }
   .card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
   .card-avatar{
-    width:48px;height:48px;border-radius:12px;
+    width:100%;aspect-ratio:1;border-radius:10px;
     background-size:cover;background-position:center;
     background-color:rgba(255,255,255,0.06);
     border:1px solid var(--border);
     margin-bottom:12px;
     display:flex;align-items:center;justify-content:center;
-    font-size:18px;font-weight:600;color:var(--text-dim);
+    font-size:36px;font-weight:600;color:var(--text-dim);
   }
   .card-name{font-size:15px;font-weight:500;color:var(--text);margin:0 0 6px}
   .card-meta{font-size:12px;color:var(--text-dim)}
 
-  .state{text-align:center;padding:48px 24px;color:var(--text-dim);font-size:14px}
+  .state{
+    text-align:center;
+    padding:64px 24px;
+    color:var(--text-dim);
+    font-size:14px;
+  }
+  .state .big{font-size:16px;color:var(--text);margin-bottom:6px}
 
   .skeleton-card{height:76px;border-radius:var(--radius)}
   .skeleton{
@@ -99,99 +82,87 @@
     background-size:200% 100%;
     animation:shimmer 1.4s infinite;
   }
-  .tab-skeleton{width:110px;height:34px;border-radius:999px}
   @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .card{position:relative}
+  .card-link{position:absolute;inset:0;z-index:1}
+  .card-edit{
+    position:absolute;
+    top:14px;right:14px;
+    z-index:2;
+    font-size:11px;
+    color:var(--text-dim);
+    padding:3px 9px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    text-decoration:none;
+    background:var(--bg-panel);
+  }
+  .card-edit:hover{border-color:var(--border-strong);color:var(--text)}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div id="site-header">
-    <h1 id="site-title">Character hub</h1>
-    <a id="editor-shortcut" href="editor.html">Editor &rarr;</a>
-  </div>
-  <p id="site-subtitle">Browse characters by member.</p>
-
-  <div id="tabs">
-    <div class="skeleton tab-skeleton"></div>
-    <div class="skeleton tab-skeleton"></div>
+  <div class="topbar">
+    <a class="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
   </div>
 
-  <div id="panel-header" style="display:none">
-    <h2 id="panel-title"></h2>
-    <a id="panel-link" href="#">View full gallery &rarr;</a>
+  <div id="header">
+    <div class="skeleton" style="width:220px;height:28px;border-radius:6px;margin-bottom:10px"></div>
   </div>
+
+  <div id="state" class="state" style="display:none"></div>
 
   <div class="grid" id="grid"></div>
-  <div id="state" class="state" style="display:none"></div>
 </div>
 
 <script>
 const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
 
-let activeCollection = null;
+const params = new URLSearchParams(window.location.search);
+const collection = params.get("collection");
 
-loadMembers();
-showEditorShortcutIfAuthed();
+let isAuthed = false;
 
-async function showEditorShortcutIfAuthed() {
+if (!collection) {
+  showState("No member specified.");
+} else {
+  checkAuth().then((authed) => { isAuthed = authed; loadMember(collection); });
+}
+
+async function checkAuth() {
   try {
     const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
-    if (res.ok) document.getElementById("editor-shortcut").style.display = "inline";
+    return res.ok;
   } catch {
-    // Not logged in, or the check failed — leave it hidden either way.
+    return false;
   }
 }
 
-async function loadMembers() {
-  try {
-    const res = await fetch(`${API_BASE}/api/members`);
-    if (!res.ok) throw new Error();
-    const members = await res.json();
-    renderTabs(members);
-    if (members.length) selectTab(members[0].collection);
-    else showState("No members set up yet.");
-  } catch {
-    document.getElementById("tabs").innerHTML = "";
-    showState("Couldn't load members right now.");
-  }
-}
-
-function renderTabs(members) {
-  const tabs = document.getElementById("tabs");
-  tabs.innerHTML = members.map((m) => `
-    <button class="tab-btn" data-collection="${escapeAttr(m.collection)}">${escapeHtml(m.collection)}</button>
-  `).join("");
-  tabs.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => selectTab(btn.dataset.collection));
-  });
-}
-
-async function selectTab(collection) {
-  activeCollection = collection;
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.collection === collection);
-  });
-
-  document.getElementById("panel-header").style.display = "flex";
-  document.getElementById("panel-title").textContent = collection;
-  document.getElementById("panel-link").href = `member.html?collection=${encodeURIComponent(collection)}`;
-
-  document.getElementById("state").style.display = "none";
-  document.getElementById("grid").innerHTML = Array(4).fill(
+async function loadMember(collection) {
+  document.getElementById("grid").innerHTML = Array(6).fill(
     '<div class="glass card skeleton-card"><div class="skeleton"></div></div>'
   ).join("");
 
   try {
-    const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`);
-    if (!res.ok) throw new Error();
+    const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`, { credentials: "include" });
+    if (!res.ok) return showState("Couldn't load this gallery right now.");
     const characters = await res.json();
-    if (collection !== activeCollection) return; // a newer tab click came in first
+    renderHeader(collection, characters.length);
     renderGrid(characters);
   } catch {
-    if (collection === activeCollection) showState("Couldn't load this gallery right now.");
+    showState("Couldn't load this gallery right now.");
   }
+}
+
+function renderHeader(collection, count) {
+  document.title = `${collection} — character gallery`;
+  document.getElementById("header").innerHTML = `
+    <h1 id="member-title">${escapeHtml(collection)}</h1>
+    <p id="member-count">${count} public ${count === 1 ? "character" : "characters"}</p>
+  `;
 }
 
 function renderGrid(characters) {
@@ -200,12 +171,14 @@ function renderGrid(characters) {
     grid.innerHTML = "";
     return showState("No public characters here yet.");
   }
-  grid.innerHTML = characters.slice(0, 8).map((c) => `
-    <a class="glass card" href="profile.html?slug=${encodeURIComponent(c.slug)}">
+  grid.innerHTML = characters.map((c) => `
+    <div class="glass card">
+      <a class="card-link" href="profile.html?slug=${encodeURIComponent(c.slug)}" aria-label="View ${escapeAttr(c.name || c.slug)}"></a>
+      ${isAuthed ? `<a class="card-edit" href="editor.html?slug=${encodeURIComponent(c.slug)}">Edit</a>` : ""}
       ${avatarHtml(c)}
       <p class="card-name">${escapeHtml(c.name || c.slug)}</p>
       <p class="card-meta">${c.artist ? "Art by " + escapeHtml(c.artist) : "&nbsp;"}</p>
-    </a>
+    </div>
   `).join("");
 }
 
@@ -220,7 +193,7 @@ function avatarHtml(c) {
 function showState(message) {
   document.getElementById("grid").innerHTML = "";
   const stateEl = document.getElementById("state");
-  stateEl.textContent = message;
+  stateEl.innerHTML = `<div class="big">${escapeHtml(message)}</div><a href="index.html">Back to hub</a>`;
   stateEl.style.display = "block";
 }
 
