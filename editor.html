@@ -421,7 +421,9 @@ function updatePreview() {
   const slug = document.getElementById("f-slug").value || "preview";
   const html = cmHtml.getValue();
   const css = cmCss.getValue();
-  const doc = `<!DOCTYPE html><html><head><style>
+  const doc = `<!DOCTYPE html><html><head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
     body{margin:0;font-family:sans-serif;background:#fff}
     .char-${slug} { all: initial; display:block; font-family:sans-serif; }
     ${scopeCss(css, `char-${slug}`)}
