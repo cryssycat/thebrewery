@@ -289,6 +289,7 @@
       <div class="field"><label>Name</label><input id="f-name"></div>
       <div class="field"><label>Slug</label><input id="f-slug" placeholder="new-character-slug"></div>
       <div class="field"><label>Member</label><select id="f-collection"></select></div>
+      <div class="field"><label>Avatar</label><input id="f-avatar-url" placeholder="Set via gallery, or paste a URL"></div>
 
       <div class="toggle-row">
         <label>Public</label>
@@ -341,6 +342,7 @@
     <div class="lightbox-actions" style="flex-shrink:0">
       <button class="btn danger" id="lightbox-delete">Delete</button>
       <button class="btn" id="lightbox-copy">Copy URL</button>
+      <button class="btn" id="lightbox-avatar">Use as avatar</button>
       <button class="btn" id="lightbox-save">Save credits</button>
       <button class="btn primary" id="lightbox-insert">Insert into HTML</button>
     </div>
@@ -352,7 +354,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
 <script>
-const API_BASE = "https://thebrewery.crysthigpen.workers.dev"; // <-- set this
+const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
 
 let currentSlug = null;
 let isPublic = false;
@@ -473,6 +475,7 @@ async function loadCharacter(slug) {
   document.getElementById("f-name").value = c.name || "";
   document.getElementById("f-slug").value = c.slug || "";
   document.getElementById("f-collection").value = c.collection || "";
+  document.getElementById("f-avatar-url").value = c.avatar_url || "";
   document.getElementById("f-artist").value = c.artist || "";
   document.getElementById("f-designer").value = c.designer || "";
   document.getElementById("f-owner").value = c.owner_credit || "";
@@ -487,7 +490,7 @@ async function loadCharacter(slug) {
 
 function resetForm() {
   currentSlug = null;
-  ["f-name","f-slug","f-artist","f-designer","f-owner","f-credit-url"].forEach(id => document.getElementById(id).value = "");
+  ["f-name","f-slug","f-artist","f-designer","f-owner","f-credit-url","f-avatar-url"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("f-collection").selectedIndex = 0;
   cmHtml.setValue("");
   cmCss.setValue("");
@@ -505,6 +508,7 @@ document.getElementById("save-btn").addEventListener("click", async () => {
   const body = {
     name: document.getElementById("f-name").value,
     collection: document.getElementById("f-collection").value,
+    avatar_url: document.getElementById("f-avatar-url").value,
     profile_html: cmHtml.getValue(),
     profile_css: cmCss.getValue(),
     artist: document.getElementById("f-artist").value,
@@ -704,6 +708,13 @@ document.getElementById("lightbox-delete").addEventListener("click", async () =>
   }
 });
 
+document.getElementById("lightbox-avatar").addEventListener("click", () => {
+  if (!lightboxImage) return;
+  document.getElementById("f-avatar-url").value = lightboxImage.url;
+  markDirty();
+  flashButton("lightbox-avatar", "Set!");
+});
+
 document.getElementById("lightbox-insert").addEventListener("click", () => {
   if (!lightboxImage || !cmHtml) return;
   const tag = `<img src="${lightboxImage.url}" alt="${escapeAttr(lightboxImage.name)}">`;
@@ -733,7 +744,7 @@ function setStatus(state) {
 }
 window.addEventListener("beforeunload", (e) => { if (dirty) e.preventDefault(); });
 
-["f-name","f-slug","f-artist","f-designer","f-owner","f-credit-url"].forEach((id) => {
+["f-name","f-slug","f-artist","f-designer","f-owner","f-credit-url","f-avatar-url"].forEach((id) => {
   document.getElementById(id).addEventListener("input", markDirty);
 });
 
