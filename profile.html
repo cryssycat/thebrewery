@@ -72,7 +72,8 @@
   .lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
 
   /* Fallback baseline styling for profile_html — a saved profile's own CSS
-     (profile_css_scoped) is injected after this and takes precedence. */
+     (raw, unscoped profile_css) is injected after this and takes precedence,
+     including for body/html and the page chrome below if the author targets it. */
   .char-slot{line-height:1.6;font-size:15px}
   .char-slot img{max-width:100%;border-radius:8px}
   .char-slot h1,.char-slot h2,.char-slot h3{font-weight:600}
@@ -254,14 +255,18 @@ function creditItem(label, name, url) {
 function renderProfile(c) {
   const body = document.getElementById("profile-body");
 
-  // Scope container: matches the char-{slug} class the editor's preview and the
-  // Worker's profile_css_scoped both prefix against.
   const container = document.createElement("div");
   container.className = `char-slot char-${c.slug}`;
   container.innerHTML = c.profile_html || "<p>This character doesn't have a profile yet.</p>";
 
+  // Raw, unscoped CSS — deliberately NOT profile_css_scoped. The scoped version prefixes
+  // every selector with an ancestor combinator (".char-slug body{...}"), which can never
+  // match anything outside that div. Since this page only ever renders one character at a
+  // time, there's no risk of one profile's CSS bleeding into another's — so we let it reach
+  // body/html and restyle the whole page (including #header-card, #gallery-section, the
+  // topbar, etc.) if the author wants that level of control.
   const styleTag = document.createElement("style");
-  styleTag.textContent = c.profile_css_scoped || "";
+  styleTag.textContent = c.profile_css || "";
 
   body.innerHTML = "";
   body.appendChild(styleTag);
