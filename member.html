@@ -115,10 +115,21 @@ const API_BASE = "https://thebrewery.crysthigpen.workers.dev"; // <-- set this, 
 const params = new URLSearchParams(window.location.search);
 const collection = params.get("collection");
 
+let isAuthed = false;
+
 if (!collection) {
   showState("No member specified.");
 } else {
-  loadMember(collection);
+  checkAuth().then((authed) => { isAuthed = authed; loadMember(collection); });
+}
+
+async function checkAuth() {
+  try {
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 async function loadMember(collection) {
@@ -127,7 +138,7 @@ async function loadMember(collection) {
   ).join("");
 
   try {
-    const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`);
+    const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`, { credentials: "include" });
     if (!res.ok) return showState("Couldn't load this gallery right now.");
     const characters = await res.json();
     renderHeader(collection, characters.length);
@@ -154,7 +165,7 @@ function renderGrid(characters) {
   grid.innerHTML = characters.map((c) => `
     <div class="glass card">
       <a class="card-link" href="profile.html?slug=${encodeURIComponent(c.slug)}" aria-label="View ${escapeAttr(c.name || c.slug)}"></a>
-      <a class="card-edit" href="editor.html?slug=${encodeURIComponent(c.slug)}">Edit</a>
+      ${isAuthed ? `<a class="card-edit" href="editor.html?slug=${encodeURIComponent(c.slug)}">Edit</a>` : ""}
       <p class="card-name">${escapeHtml(c.name || c.slug)}</p>
       <p class="card-meta">${c.artist ? "Art by " + escapeHtml(c.artist) : "&nbsp;"}</p>
     </div>
