@@ -212,7 +212,10 @@
 <!-- ============ EDITOR ============ -->
 <div id="editor-screen">
   <header>
-    <h1>Character editor</h1>
+    <div style="display:flex;align-items:center;gap:14px">
+      <a href="index.html" style="font-size:13px;color:var(--text-dim)">&larr; Character hub</a>
+      <h1 style="margin:0">Character editor</h1>
+    </div>
     <div class="right">
       <span id="status-pill">No changes</span>
       <button class="btn ghost" id="logout-btn">Log out</button>
@@ -284,8 +287,7 @@ let dirty = false;
 // ---------- Auth ----------
 
 async function checkAuth() {
-  // A lightweight ping — any protected GET will 401 if the session cookie is missing/expired.
-  const res = await fetch(`${API_BASE}/api/characters`, { credentials: "include" });
+  const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
   return res.ok;
 }
 
@@ -321,6 +323,12 @@ async function enterEditor() {
   initEditors();
   await loadMembers();
   await loadCharacterList();
+
+  const requestedSlug = new URLSearchParams(window.location.search).get("slug");
+  if (requestedSlug) {
+    document.getElementById("slug-select").value = requestedSlug;
+    loadCharacter(requestedSlug);
+  }
 }
 
 async function loadMembers() {
