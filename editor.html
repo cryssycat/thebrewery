@@ -193,17 +193,26 @@
   }
   .lightbox-content{max-width:min(720px, 90vw);max-height:80vh;display:flex;flex-direction:column;gap:12px;align-items:center}
   .lightbox-content img{max-width:100%;max-height:70vh;border-radius:10px;display:block}
-  .credit-row{display:flex;gap:6px;align-items:center}
-  .credit-row input{
-    padding:7px 9px;background:rgba(255,255,255,0.03);border:1px solid var(--border);
-    border-radius:8px;color:var(--text);font-size:12px;outline:none;
+  .credit-row{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:12px 38px 12px 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:rgba(255,255,255,0.02);
   }
-  .credit-row .credit-role{width:90px;flex-shrink:0}
-  .credit-row .credit-name{flex:1;min-width:0}
-  .credit-row .credit-url{flex:1;min-width:0}
+  .credit-row input{
+    width:100%;
+    padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-size:14px;outline:none;
+  }
+  .credit-row input:focus{border-color:var(--accent-dim)}
   .credit-row-remove{
-    flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
-    background:transparent;color:var(--text-dim);cursor:pointer;font-size:14px;line-height:1;
+    position:absolute;top:10px;right:10px;
+    flex-shrink:0;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);
+    background:transparent;color:var(--text-dim);cursor:pointer;font-size:16px;line-height:1;
   }
   .credit-row-remove:hover{color:var(--danger);border-color:var(--danger)}
   .lightbox-actions{display:flex;gap:8px}
@@ -327,7 +336,7 @@
   <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
   <div class="lightbox-content">
     <img id="lightbox-img" src="" alt="">
-    <div style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px" id="lightbox-credits-list"></div>
+    <div style="width:100%;max-width:540px;display:flex;flex-direction:column;gap:10px;max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px" id="lightbox-credits-list"></div>
     <button class="btn ghost" id="lightbox-add-credit" style="align-self:flex-start;font-size:13px">+ Add credit</button>
     <div class="lightbox-actions">
       <button class="btn danger" id="lightbox-delete">Delete</button>
