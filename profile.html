@@ -74,12 +74,34 @@
   }
   @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .topbar a{font-size:13px}
+  .edit-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    color:var(--text-dim) !important;
+    text-decoration:none !important;
+  }
+  .edit-link:hover{border-color:var(--border-strong);color:var(--text) !important}
+  #edit-link-wrap{display:none}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <a class="back-link" href="/">&larr; Back to hub</a>
+  <div class="topbar">
+    <a class="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
+    <span id="edit-link-wrap"><a class="edit-link" id="edit-link" href="#">Edit this character</a></span>
+  </div>
 
   <div id="header-card" class="glass">
     <div id="header-loading">
@@ -128,6 +150,10 @@ function renderHeader(c) {
   document.title = c.name ? `${c.name} — character profile` : "Character profile";
   document.getElementById("char-name").textContent = c.name || c.slug;
 
+  const editLink = document.getElementById("edit-link");
+  editLink.href = `editor.html?slug=${encodeURIComponent(c.slug)}`;
+  document.getElementById("edit-link-wrap").style.display = "inline-block";
+
   const credits = [];
   if (c.artist) credits.push(creditItem("Art", c.artist, c.credit_url));
   if (c.designer) credits.push(creditItem("Design", c.designer, c.credit_url));
@@ -164,7 +190,7 @@ function renderProfile(c) {
 function showState(message) {
   document.getElementById("header-loading").style.display = "none";
   const stateEl = document.getElementById("profile-state");
-  stateEl.innerHTML = `<div class="big">${escapeHtml(message)}</div><a href="/">Back to hub</a>`;
+  stateEl.innerHTML = `<div class="big">${escapeHtml(message)}</div><a href="index.html">Back to hub</a>`;
   stateEl.style.display = "block";
 }
 
