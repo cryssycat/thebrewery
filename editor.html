@@ -118,6 +118,8 @@
   }
   @media(max-width:1000px){ main{grid-template-columns:1fr} }
 
+  .middle-stack{display:flex;flex-direction:column;gap:16px;min-width:0}
+
   .panel{padding:18px}
   .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:0 0 14px;font-weight:600}
 
@@ -301,29 +303,33 @@
       <div class="field"><label>Designer</label><input id="f-designer"></div>
       <div class="field"><label>Owner</label><input id="f-owner"></div>
       <div class="field"><label>Credit link</label><input id="f-credit-url" placeholder="https://"></div>
+    </section>
 
-      <h2 style="margin-top:22px">Image upload</h2>
+    <!-- Middle: code editor + live preview, stacked -->
+    <div class="middle-stack">
+      <section class="panel glass">
+        <h2>Profile code</h2>
+        <div class="code-tabs">
+          <button class="active" data-tab="html">HTML</button>
+          <button data-tab="css">CSS</button>
+        </div>
+        <div class="cm-wrap active" id="wrap-html"><textarea id="cm-html"></textarea></div>
+        <div class="cm-wrap" id="wrap-css"><textarea id="cm-css"></textarea></div>
+      </section>
+
+      <section class="panel glass">
+        <h2>Live preview</h2>
+        <iframe id="preview-frame"></iframe>
+      </section>
+    </div>
+
+    <!-- Right: image upload -->
+    <section class="panel glass">
+      <h2>Image upload</h2>
       <div class="upload-zone" id="upload-zone">Click or drop an image</div>
       <input type="file" id="upload-input" accept="image/*" style="display:none">
       <div id="upload-error" style="font-size:12px;margin-top:8px;color:var(--danger);display:none">Upload failed.</div>
       <div class="gallery-grid" id="upload-gallery"></div>
-    </section>
-
-    <!-- Middle: code editors -->
-    <section class="panel glass">
-      <h2>Profile code</h2>
-      <div class="code-tabs">
-        <button class="active" data-tab="html">HTML</button>
-        <button data-tab="css">CSS</button>
-      </div>
-      <div class="cm-wrap active" id="wrap-html"><textarea id="cm-html"></textarea></div>
-      <div class="cm-wrap" id="wrap-css"><textarea id="cm-css"></textarea></div>
-    </section>
-
-    <!-- Right: preview -->
-    <section class="panel glass">
-      <h2>Live preview</h2>
-      <iframe id="preview-frame"></iframe>
     </section>
   </main>
 
