@@ -43,6 +43,21 @@
     border-radius:var(--radius);
   }
 
+  .search-input{
+    display:block;
+    width:100%;
+    padding:11px 14px;
+    margin-bottom:20px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);
+    border-radius:10px;
+    color:var(--text);
+    font-size:14px;
+    outline:none;
+  }
+  .search-input:focus{border-color:var(--border-strong)}
+  .search-input::placeholder{color:var(--text-dim)}
+
   .grid{
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
@@ -118,6 +133,8 @@
     <div class="skeleton" style="width:220px;height:28px;border-radius:6px;margin-bottom:10px"></div>
   </div>
 
+  <input type="text" id="search-input" class="search-input" placeholder="Search by name or tag...">
+
   <div id="state" class="state" style="display:none"></div>
 
   <div class="grid" id="grid"></div>
@@ -130,11 +147,30 @@ const params = new URLSearchParams(window.location.search);
 const collection = params.get("collection");
 
 let isAuthed = false;
+let allCharacters = [];
 
 if (!collection) {
   showState("No member specified.");
 } else {
   checkAuth().then((authed) => { isAuthed = authed; loadMember(collection); });
+}
+
+document.getElementById("search-input").addEventListener("input", (e) => {
+  applySearch(e.target.value);
+});
+
+function applySearch(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    renderGrid(allCharacters);
+    return;
+  }
+  const filtered = allCharacters.filter((c) => {
+    const nameMatch = (c.name || c.slug || "").toLowerCase().includes(q);
+    const tagMatch = (c.tags || []).some((t) => t.toLowerCase().includes(q));
+    return nameMatch || tagMatch;
+  });
+  renderGrid(filtered, true);
 }
 
 async function checkAuth() {
@@ -155,6 +191,7 @@ async function loadMember(collection) {
     const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`, { credentials: "include" });
     if (!res.ok) return showState("Couldn't load this gallery right now.");
     const characters = await res.json();
+    allCharacters = characters;
     renderHeader(collection, characters.length);
     renderGrid(characters);
   } catch {
@@ -170,12 +207,13 @@ function renderHeader(collection, count) {
   `;
 }
 
-function renderGrid(characters) {
+function renderGrid(characters, isSearchResult) {
   const grid = document.getElementById("grid");
   if (characters.length === 0) {
     grid.innerHTML = "";
-    return showState("No public characters here yet.");
+    return showState(isSearchResult ? "No characters match that search." : "No public characters here yet.");
   }
+  document.getElementById("state").style.display = "none";
   grid.innerHTML = characters.map((c) => `
     <div class="glass card">
       <a class="card-link" href="profile.html?slug=${encodeURIComponent(c.slug)}" aria-label="View ${escapeAttr(c.name || c.slug)}"></a>
