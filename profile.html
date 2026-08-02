@@ -49,6 +49,12 @@
   .credit-item{font-size:13px;color:var(--text-dim)}
   .credit-item strong{color:var(--text);font-weight:500}
 
+  .tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .tag-pill{
+    font-size:11px;padding:3px 10px;border-radius:999px;
+    border:1px solid var(--border);color:var(--text-dim);
+  }
+
   #profile-card{padding:0;overflow:hidden}
   #profile-body{padding:28px}
 
@@ -133,6 +139,7 @@
     <div id="header-content" style="display:none">
       <h1 id="char-name"></h1>
       <div class="credits" id="credits-row"></div>
+      <div class="tags-row" id="tags-row"></div>
     </div>
   </div>
 
@@ -255,6 +262,9 @@ function renderHeader(c) {
   if (c.artist) credits.push(creditItem("Art", c.artist, c.artist_url));
   if (c.designer) credits.push(creditItem("Design", c.designer, c.designer_url));
   document.getElementById("credits-row").innerHTML = credits.join("");
+
+  const tags = c.tags || [];
+  document.getElementById("tags-row").innerHTML = tags.map((t) => `<span class="tag-pill">${escapeHtml(t)}</span>`).join("");
 
   document.getElementById("header-loading").style.display = "none";
   document.getElementById("header-content").style.display = "block";
