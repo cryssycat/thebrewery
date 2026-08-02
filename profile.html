@@ -252,9 +252,8 @@ function renderHeader(c) {
   document.getElementById("char-name").textContent = c.name || c.slug;
 
   const credits = [];
-  if (c.artist) credits.push(creditItem("Art", c.artist, c.credit_url));
-  if (c.designer) credits.push(creditItem("Design", c.designer, c.credit_url));
-  if (c.owner_credit) credits.push(creditItem("Owned by", c.owner_credit));
+  if (c.artist) credits.push(creditItem("Art", c.artist, c.artist_url));
+  if (c.designer) credits.push(creditItem("Design", c.designer, c.designer_url));
   document.getElementById("credits-row").innerHTML = credits.join("");
 
   document.getElementById("header-loading").style.display = "none";
