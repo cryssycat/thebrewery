@@ -89,6 +89,11 @@
   }
   .card-name{font-size:15px;font-weight:500;color:var(--text);margin:0 0 6px}
   .card-meta{font-size:12px;color:var(--text-dim)}
+  .card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .card-tag{
+    font-size:11px;padding:2px 8px;border-radius:999px;
+    border:1px solid var(--border);color:var(--text-dim);
+  }
 
   .state{text-align:center;padding:48px 24px;color:var(--text-dim);font-size:14px}
 
@@ -205,8 +210,14 @@ function renderGrid(characters) {
       ${avatarHtml(c)}
       <p class="card-name">${escapeHtml(c.name || c.slug)}</p>
       <p class="card-meta">${c.artist ? "Art by " + escapeHtml(c.artist) : "&nbsp;"}</p>
+      ${tagsHtml(c)}
     </a>
   `).join("");
+}
+
+function tagsHtml(c) {
+  if (!c.tags || c.tags.length === 0) return "";
+  return `<div class="card-tags">${c.tags.map((t) => `<span class="card-tag">${escapeHtml(t)}</span>`).join("")}</div>`;
 }
 
 function avatarHtml(c) {
