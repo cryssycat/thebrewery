@@ -300,9 +300,9 @@
 
       <h2 style="margin-top:22px">Credits</h2>
       <div class="field"><label>Artist</label><input id="f-artist"></div>
+      <div class="field"><label>Artist link</label><input id="f-artist-url" placeholder="https://"></div>
       <div class="field"><label>Designer</label><input id="f-designer"></div>
-      <div class="field"><label>Owner</label><input id="f-owner"></div>
-      <div class="field"><label>Credit link</label><input id="f-credit-url" placeholder="https://"></div>
+      <div class="field"><label>Designer link</label><input id="f-designer-url" placeholder="https://"></div>
     </section>
 
     <!-- Middle: code editor + live preview, stacked -->
@@ -484,8 +484,8 @@ async function loadCharacter(slug) {
   document.getElementById("f-avatar-url").value = c.avatar_url || "";
   document.getElementById("f-artist").value = c.artist || "";
   document.getElementById("f-designer").value = c.designer || "";
-  document.getElementById("f-owner").value = c.owner_credit || "";
-  document.getElementById("f-credit-url").value = c.credit_url || "";
+  document.getElementById("f-artist-url").value = c.artist_url || "";
+  document.getElementById("f-designer-url").value = c.designer_url || "";
   cmHtml.setValue(c.profile_html || "");
   cmCss.setValue(c.profile_css || "");
   setVisibilitySwitch(isPublic);
@@ -496,7 +496,7 @@ async function loadCharacter(slug) {
 
 function resetForm() {
   currentSlug = null;
-  ["f-name","f-slug","f-artist","f-designer","f-owner","f-credit-url","f-avatar-url"].forEach(id => document.getElementById(id).value = "");
+  ["f-name","f-slug","f-artist","f-designer","f-artist-url","f-designer-url","f-avatar-url"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("f-collection").selectedIndex = 0;
   cmHtml.setValue("");
   cmCss.setValue("");
@@ -518,9 +518,9 @@ document.getElementById("save-btn").addEventListener("click", async () => {
     profile_html: cmHtml.getValue(),
     profile_css: cmCss.getValue(),
     artist: document.getElementById("f-artist").value,
+    artist_url: document.getElementById("f-artist-url").value,
     designer: document.getElementById("f-designer").value,
-    owner_credit: document.getElementById("f-owner").value,
-    credit_url: document.getElementById("f-credit-url").value,
+    designer_url: document.getElementById("f-designer-url").value,
     visibility: isPublic ? "public" : "draft",
   };
 
@@ -750,7 +750,7 @@ function setStatus(state) {
 }
 window.addEventListener("beforeunload", (e) => { if (dirty) e.preventDefault(); });
 
-["f-name","f-slug","f-artist","f-designer","f-owner","f-credit-url","f-avatar-url"].forEach((id) => {
+["f-name","f-slug","f-artist","f-designer","f-artist-url","f-designer-url","f-avatar-url"].forEach((id) => {
   document.getElementById(id).addEventListener("input", markDirty);
 });
 
