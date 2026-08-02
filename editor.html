@@ -225,6 +225,17 @@
   }
 
   .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+
+  .tag-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 6px 4px 10px;border-radius:999px;
+    background:var(--accent-dim);color:#fff;font-size:12px;
+  }
+  .tag-pill-remove{
+    background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer;
+    font-size:13px;line-height:1;padding:2px;
+  }
+  .tag-pill-remove:hover{color:#fff}
   .toggle-row label{font-size:13px}
   .switch{
     width:38px;height:22px;border-radius:999px;
@@ -292,6 +303,16 @@
       <div class="field"><label>Slug</label><input id="f-slug" placeholder="new-character-slug"></div>
       <div class="field"><label>Member</label><select id="f-collection"></select></div>
       <div class="field"><label>Avatar</label><input id="f-avatar-url" placeholder="Set via gallery, or paste a URL"></div>
+
+      <div class="field">
+        <label>Tags</label>
+        <div id="tag-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <input id="f-tag-input" list="tag-suggestions" placeholder="e.g. Mated, Needs Ref" style="flex:1">
+          <datalist id="tag-suggestions"></datalist>
+          <button type="button" class="btn ghost" id="add-tag-btn" style="flex-shrink:0">+ Add</button>
+        </div>
+      </div>
 
       <div class="toggle-row">
         <label>Public</label>
@@ -404,6 +425,7 @@ async function enterEditor() {
   document.getElementById("editor-screen").style.display = "block";
   initEditors();
   await loadMembers();
+  await loadTagSuggestions();
   await loadCharacterList();
 
   const requestedSlug = new URLSearchParams(window.location.search).get("slug");
@@ -418,6 +440,13 @@ async function loadMembers() {
   const members = res.ok ? await res.json() : [];
   const select = document.getElementById("f-collection");
   select.innerHTML = members.map((m) => `<option value="${m.collection}">${m.collection}</option>`).join("");
+}
+
+async function loadTagSuggestions() {
+  const res = await fetch(`${API_BASE}/api/tags`, { credentials: "include" });
+  const tags = res.ok ? await res.json() : [];
+  const datalist = document.getElementById("tag-suggestions");
+  datalist.innerHTML = tags.map((t) => `<option value="${escapeAttr(t)}">`).join("");
 }
 
 // ---------- Code editors ----------
@@ -471,6 +500,8 @@ async function loadCharacterList() {
   select.onchange = () => select.value ? loadCharacter(select.value) : resetForm();
 }
 
+let currentTags = [];
+
 async function loadCharacter(slug) {
   const res = await fetch(`${API_BASE}/api/characters/${slug}`, { credentials: "include" });
   if (!res.ok) return resetForm();
@@ -486,6 +517,8 @@ async function loadCharacter(slug) {
   document.getElementById("f-designer").value = c.designer || "";
   document.getElementById("f-artist-url").value = c.artist_url || "";
   document.getElementById("f-designer-url").value = c.designer_url || "";
+  currentTags = Array.isArray(c.tags) ? [...c.tags] : [];
+  renderTagPills();
   cmHtml.setValue(c.profile_html || "");
   cmCss.setValue(c.profile_css || "");
   setVisibilitySwitch(isPublic);
@@ -498,12 +531,49 @@ function resetForm() {
   currentSlug = null;
   ["f-name","f-slug","f-artist","f-designer","f-artist-url","f-designer-url","f-avatar-url"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("f-collection").selectedIndex = 0;
+  currentTags = [];
+  renderTagPills();
   cmHtml.setValue("");
   cmCss.setValue("");
   setVisibilitySwitch(false);
   updatePreview();
   markClean();
   loadGallery(null);
+}
+
+function renderTagPills() {
+  const wrap = document.getElementById("tag-pills");
+  wrap.innerHTML = currentTags.map((tag, i) => `
+    <span class="tag-pill">${escapeHtml(tag)}<button type="button" class="tag-pill-remove" data-index="${i}">&times;</button></span>
+  `).join("");
+  wrap.querySelectorAll(".tag-pill-remove").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      currentTags.splice(Number(btn.dataset.index), 1);
+      renderTagPills();
+      markDirty();
+    });
+  });
+}
+
+function addTagFromInput() {
+  const input = document.getElementById("f-tag-input");
+  const value = input.value.trim();
+  if (!value) return;
+  if (!currentTags.some((t) => t.toLowerCase() === value.toLowerCase())) {
+    currentTags.push(value);
+    renderTagPills();
+    markDirty();
+  }
+  input.value = "";
+}
+
+document.getElementById("add-tag-btn").addEventListener("click", addTagFromInput);
+document.getElementById("f-tag-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); addTagFromInput(); }
+});
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 }
 
 document.getElementById("save-btn").addEventListener("click", async () => {
@@ -515,6 +585,7 @@ document.getElementById("save-btn").addEventListener("click", async () => {
     name: document.getElementById("f-name").value,
     collection: document.getElementById("f-collection").value,
     avatar_url: document.getElementById("f-avatar-url").value,
+    tags: currentTags,
     profile_html: cmHtml.getValue(),
     profile_css: cmCss.getValue(),
     artist: document.getElementById("f-artist").value,
