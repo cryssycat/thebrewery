@@ -166,19 +166,6 @@
   }
   .upload-zone:hover{border-color:var(--accent)}
 
-  .watermark-control{
-    display:flex;align-items:center;gap:10px;
-    padding-bottom:16px;margin-bottom:16px;
-    border-bottom:1px solid var(--border);
-  }
-  .watermark-preview{
-    width:40px;height:40px;border-radius:8px;flex-shrink:0;
-    background-size:contain;background-repeat:no-repeat;background-position:center;
-    background-color:rgba(255,255,255,0.03);border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;
-    font-size:9px;color:var(--text-dim);text-align:center;line-height:1.2;
-  }
-
   .gallery-grid{
     display:grid;
     grid-template-columns:repeat(3, 1fr);
@@ -359,12 +346,6 @@
 
     <!-- Right: image upload -->
     <section class="panel glass">
-      <div class="watermark-control">
-        <div class="watermark-preview" id="watermark-preview">No watermark set</div>
-        <button class="btn ghost" id="watermark-btn" type="button">Set watermark logo</button>
-        <input type="file" id="watermark-input" accept="image/png,image/webp" style="display:none">
-      </div>
-
       <h2>Image upload</h2>
       <div class="upload-zone" id="upload-zone">Click or drop an image</div>
       <input type="file" id="upload-input" accept="image/*" style="display:none">
@@ -445,7 +426,6 @@ async function enterEditor() {
   initEditors();
   await loadMembers();
   await loadTagSuggestions();
-  await loadWatermark();
   await loadCharacterList();
 
   const requestedSlug = new URLSearchParams(window.location.search).get("slug");
@@ -635,103 +615,6 @@ function setVisibilitySwitch(val) {
   document.getElementById("visibility-switch").classList.toggle("on", val);
 }
 
-// ---------- Watermark logo ----------
-
-let watermarkUrl = null;
-let watermarkBitmap = null; // cached decoded bitmap, reused across uploads in this session
-
-async function loadWatermark() {
-  try {
-    const res = await fetch(`${API_BASE}/api/watermark`, { credentials: "include" });
-    const data = res.ok ? await res.json() : { url: null };
-    watermarkUrl = data.url;
-    watermarkBitmap = null; // invalidate cache; re-decoded lazily on next upload
-    renderWatermarkPreview();
-  } catch {
-    watermarkUrl = null;
-  }
-}
-
-function renderWatermarkPreview() {
-  const preview = document.getElementById("watermark-preview");
-  if (watermarkUrl) {
-    preview.style.backgroundImage = `url('${watermarkUrl}')`;
-    preview.textContent = "";
-  } else {
-    preview.style.backgroundImage = "";
-    preview.textContent = "None";
-  }
-}
-
-document.getElementById("watermark-btn").addEventListener("click", () => {
-  document.getElementById("watermark-input").click();
-});
-document.getElementById("watermark-input").addEventListener("change", async () => {
-  const input = document.getElementById("watermark-input");
-  const file = input.files[0];
-  if (!file) return;
-  const form = new FormData();
-  form.append("file", file);
-  const res = await fetch(`${API_BASE}/api/watermark`, { method: "POST", credentials: "include", body: form });
-  if (res.ok) {
-    const data = await res.json();
-    watermarkUrl = data.url;
-    watermarkBitmap = null;
-    renderWatermarkPreview();
-  } else {
-    alert("Couldn't set the watermark logo — try again.");
-  }
-  input.value = "";
-});
-
-async function getWatermarkBitmap() {
-  if (watermarkBitmap) return watermarkBitmap;
-  if (!watermarkUrl) return null;
-  const res = await fetch(watermarkUrl);
-  const blob = await res.blob();
-  watermarkBitmap = await createImageBitmap(blob);
-  return watermarkBitmap;
-}
-
-// Composites the watermark over an image entirely in the browser and returns a new Blob.
-// The caller's original File is never touched further — nothing unwatermarked gets uploaded.
-async function watermarkImage(file) {
-  const sourceBitmap = await createImageBitmap(file);
-  const logo = await getWatermarkBitmap();
-
-  const canvas = document.createElement("canvas");
-  canvas.width = sourceBitmap.width;
-  canvas.height = sourceBitmap.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(sourceBitmap, 0, 0);
-
-  if (logo) {
-    // Tiled, low-opacity, slightly rotated — much harder to crop out cleanly than a
-    // single corner mark, which is exactly what makes a watermark actually protective
-    // rather than cosmetic.
-    const tileSize = Math.max(canvas.width, canvas.height) / 4;
-    const scale = tileSize / Math.max(logo.width, logo.height);
-    const logoW = logo.width * scale;
-    const logoH = logo.height * scale;
-
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(-0.4); // ~-23 degrees
-    ctx.translate(-canvas.width, -canvas.height);
-
-    const span = tileSize * 1.6;
-    for (let y = -canvas.height; y < canvas.height * 3; y += span) {
-      for (let x = -canvas.width; x < canvas.width * 3; x += span) {
-        ctx.drawImage(logo, x, y, logoW, logoH);
-      }
-    }
-    ctx.restore();
-  }
-
-  return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-}
-
 // ---------- Upload gallery + lightbox (persistent, per character) ----------
 
 let galleryItems = []; // [{id, url, name, credits}] — loaded from /api/gallery/:slug
@@ -755,10 +638,6 @@ uploadZone.addEventListener("click", () => {
     alert("Give the character a slug first — the gallery is tied to it.");
     return;
   }
-  if (!watermarkUrl) {
-    alert("Set a watermark logo first — uploads are composited with it before they ever reach storage, so there's nothing to upload until one exists.");
-    return;
-  }
   uploadInput.click();
 });
 uploadInput.addEventListener("change", async () => {
@@ -769,14 +648,10 @@ uploadInput.addEventListener("change", async () => {
   document.getElementById("upload-error").style.display = "none";
   renderGallery(true); // show a pending tile while this upload is in flight
 
+  const form = new FormData();
+  form.append("file", file);
+  form.append("slug", slug);
   try {
-    const watermarked = await watermarkImage(file);
-    // `file` (the original, unwatermarked bytes) is never referenced again after this
-    // point and never leaves the browser — only `watermarked` gets sent anywhere.
-    const form = new FormData();
-    form.append("file", watermarked, file.name.replace(/\.\w+$/, "") + ".png");
-    form.append("slug", slug);
-
     const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
     if (!res.ok) throw new Error("upload failed");
     const item = await res.json();
