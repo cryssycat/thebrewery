@@ -134,6 +134,10 @@
 
 <script>
 const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
+const authHeaders = () => {
+  const t = localStorage.getItem("brewery_token");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
 
 let activeCollection = null;
 
@@ -142,7 +146,7 @@ showEditorShortcutIfAuthed();
 
 async function showEditorShortcutIfAuthed() {
   try {
-    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include", headers: authHeaders() });
     if (res.ok) document.getElementById("editor-shortcut").style.display = "inline";
   } catch {
     // Not logged in, or the check failed — leave it hidden either way.
