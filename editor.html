@@ -901,6 +901,33 @@ window.addEventListener("beforeunload", (e) => { if (dirty) e.preventDefault(); 
   document.getElementById(id).addEventListener("input", markDirty);
 });
 
+// ---------- Delete character ----------
+
+document.getElementById("delete-btn").addEventListener("click", async () => {
+  const slug = currentSlug;
+  if (!slug) { alert("Pick a saved character from the dropdown first."); return; }
+  const name = document.getElementById("f-name").value || slug;
+  if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/characters/${encodeURIComponent(slug)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      alert(res.status === 401
+        ? "Your session expired. Reload the page and sign in again."
+        : `Delete failed (server said ${res.status}).`);
+      return;
+    }
+    resetForm();
+    await loadCharacterList();
+    document.getElementById("slug-select").value = "";
+  } catch {
+    alert("Couldn't reach the server.");
+  }
+});
+
 // ---------- Small conveniences ----------
 
 let lastAutoSlug = "";
