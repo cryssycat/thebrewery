@@ -176,9 +176,10 @@ function applySearch(query) {
 async function checkAuth() {
   try {
     const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
-    return res.ok;
+    if (res.ok) localStorage.setItem("brewery_editor", "1");
+    return res.ok || localStorage.getItem("brewery_editor") === "1";
   } catch {
-    return false;
+    return localStorage.getItem("brewery_editor") === "1";
   }
 }
 
@@ -203,7 +204,7 @@ function renderHeader(collection, count) {
   document.title = `${collection} — character gallery`;
   document.getElementById("header").innerHTML = `
     <h1 id="member-title">${escapeHtml(collection)}</h1>
-    <p id="member-count">${count} public ${count === 1 ? "character" : "characters"}</p>
+    <p id="member-count">${count} public ${count === 1 ? "character" : "characters"}${isAuthed ? ` &middot; <a href="editor.html?new=1&collection=${encodeURIComponent(collection)}">+ New character</a>` : ""}</p>
   `;
 }
 
