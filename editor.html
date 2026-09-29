@@ -164,7 +164,9 @@
     cursor:pointer;
     margin-top:10px;
   }
-  .upload-zone:hover{border-color:var(--accent)}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);color:var(--text)}
+  .upload-zone{padding:28px 16px;font-size:13px}
+  .gallery-thumb.err{border-color:var(--danger);color:var(--danger);padding:4px;font-size:10px;line-height:1.3}
 
   .gallery-grid{
     display:grid;
@@ -288,6 +290,7 @@
       <h1 style="margin:0">Character editor</h1>
     </div>
     <div class="right">
+      <a id="view-link" href="#" target="_blank" style="font-size:13px;display:none">View profile &#8599;</a>
       <span id="status-pill">No changes</span>
       <button class="btn ghost" id="logout-btn">Log out</button>
     </div>
@@ -347,8 +350,8 @@
     <!-- Right: image upload -->
     <section class="panel glass">
       <h2>Image upload</h2>
-      <div class="upload-zone" id="upload-zone">Click or drop an image</div>
-      <input type="file" id="upload-input" accept="image/*" style="display:none">
+      <div class="upload-zone" id="upload-zone">Drop images here, click to browse,<br>or paste from your clipboard</div>
+      <input type="file" id="upload-input" accept="image/*" multiple style="display:none">
       <div id="upload-error" style="font-size:12px;margin-top:8px;color:var(--danger);display:none">Upload failed.</div>
       <div class="gallery-grid" id="upload-gallery"></div>
     </section>
@@ -390,9 +393,16 @@ let dirty = false;
 // ---------- Auth ----------
 
 async function checkAuth() {
-  const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
-  return res.ok;
+  try {
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    if (res.ok) localStorage.setItem("brewery_editor", "1");
+    return res.ok;
+  } catch { return false; }
 }
+
+document.getElementById("login-pass").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("login-btn").click();
+});
 
 document.getElementById("login-btn").addEventListener("click", async () => {
   const username = document.getElementById("login-user").value.trim();
@@ -408,6 +418,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
       body: JSON.stringify({ username, password }),
     });
     if (!res.ok) throw new Error("bad login");
+    localStorage.setItem("brewery_editor", "1");
     await enterEditor();
   } catch {
     errorEl.style.display = "block";
@@ -428,7 +439,12 @@ async function enterEditor() {
   await loadTagSuggestions();
   await loadCharacterList();
 
-  const requestedSlug = new URLSearchParams(window.location.search).get("slug");
+  const qs = new URLSearchParams(window.location.search);
+  if (qs.get("new")) {
+    resetForm();
+    if (qs.get("collection")) document.getElementById("f-collection").value = qs.get("collection");
+  }
+  const requestedSlug = qs.get("slug");
   if (requestedSlug) {
     document.getElementById("slug-select").value = requestedSlug;
     loadCharacter(requestedSlug);
@@ -507,6 +523,9 @@ async function loadCharacter(slug) {
   if (!res.ok) return resetForm();
   const c = await res.json();
   currentSlug = c.slug;
+  const vl = document.getElementById("view-link");
+  vl.href = `profile.html?slug=${encodeURIComponent(c.slug)}`;
+  vl.style.display = "inline";
   isPublic = c.visibility === "public";
 
   document.getElementById("f-name").value = c.name || "";
@@ -529,6 +548,7 @@ async function loadCharacter(slug) {
 
 function resetForm() {
   currentSlug = null;
+  document.getElementById("view-link").style.display = "none";
   ["f-name","f-slug","f-artist","f-designer","f-artist-url","f-designer-url","f-avatar-url"].forEach(id => document.getElementById(id).value = "");
   document.getElementById("f-collection").selectedIndex = 0;
   currentTags = [];
@@ -603,7 +623,10 @@ document.getElementById("save-btn").addEventListener("click", async () => {
   });
 
   if (res.ok) { markClean(); await loadCharacterList(); }
-  else setStatus("error");
+  else {
+    setStatus("error");
+    if (res.status === 401) alert("Your session expired. Reload the page and sign in again (your edits stay in the editor until you do).");
+  }
 });
 
 document.getElementById("visibility-switch").addEventListener("click", () => {
@@ -633,48 +656,96 @@ async function loadGallery(slug) {
 
 const uploadZone = document.getElementById("upload-zone");
 const uploadInput = document.getElementById("upload-input");
-uploadZone.addEventListener("click", () => {
-  if (!document.getElementById("f-slug").value.trim()) {
-    alert("Give the character a slug first — the gallery is tied to it.");
-    return;
-  }
-  uploadInput.click();
+let pendingUploads = []; // in-flight or failed: {name, error}
+
+function slugify(s) {
+  return s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+function ensureSlug() {
+  const el = document.getElementById("f-slug");
+  if (!el.value.trim()) el.value = slugify(document.getElementById("f-name").value);
+  return el.value.trim();
+}
+
+uploadZone.addEventListener("click", () => uploadInput.click());
+uploadInput.addEventListener("change", () => { uploadFiles([...uploadInput.files]); uploadInput.value = ""; });
+["dragenter", "dragover"].forEach((ev) => uploadZone.addEventListener(ev, (e) => { e.preventDefault(); uploadZone.classList.add("drag"); }));
+["dragleave", "drop"].forEach((ev) => uploadZone.addEventListener(ev, (e) => { e.preventDefault(); uploadZone.classList.remove("drag"); }));
+uploadZone.addEventListener("drop", (e) => uploadFiles([...e.dataTransfer.files]));
+// A missed drop shouldn't navigate the browser away from unsaved work.
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => e.preventDefault());
+document.addEventListener("paste", (e) => {
+  const files = [...(e.clipboardData?.files || [])];
+  if (files.length) uploadFiles(files);
 });
-uploadInput.addEventListener("change", async () => {
-  const file = uploadInput.files[0];
-  const slug = document.getElementById("f-slug").value.trim();
-  if (!file || !slug) return;
 
-  document.getElementById("upload-error").style.display = "none";
-  renderGallery(true); // show a pending tile while this upload is in flight
-
-  const form = new FormData();
-  form.append("file", file);
-  form.append("slug", slug);
+// Big photos get scaled down before upload (max 2400px) so uploads are fast and don't time out.
+async function shrink(file) {
+  if (file.type === "image/gif" || file.type === "image/svg+xml" || file.size < 1.5 * 1024 * 1024) return file;
   try {
-    const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
-    if (!res.ok) throw new Error("upload failed");
-    const item = await res.json();
-    galleryItems.push(item);
-  } catch {
-    document.getElementById("upload-error").style.display = "block";
-  }
-  uploadInput.value = "";
-  renderGallery();
-});
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const png = file.type === "image/png";
+    const type = png ? "image/png" : "image/jpeg";
+    const blob = await new Promise((r) => c.toBlob(r, type, 0.9));
+    if (blob && blob.size < file.size) return new File([blob], file.name.replace(/\.\w+$/, png ? ".png" : ".jpg"), { type });
+  } catch {}
+  return file;
+}
 
-function renderGallery(pending) {
+async function uploadFiles(files) {
+  files = files.filter((f) => f.type.startsWith("image/"));
+  if (!files.length) return;
+  const slug = ensureSlug();
+  if (!slug) { alert("Type a name first so the gallery has somewhere to live."); return; }
+
+  for (const file of files) {
+    const p = { name: file.name, error: null };
+    pendingUploads.push(p);
+    renderGallery();
+    try {
+      const form = new FormData();
+      form.append("file", await shrink(file));
+      form.append("slug", slug);
+      const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
+      if (!res.ok) throw new Error(res.status === 401 ? "Session expired: reload and sign in" : `Server error ${res.status}`);
+      const item = await res.json();
+      galleryItems.push(item);
+      pendingUploads = pendingUploads.filter((x) => x !== p);
+      const av = document.getElementById("f-avatar-url");
+      if (!av.value.trim()) { av.value = item.url; markDirty(); } // first image becomes the avatar
+    } catch (err) {
+      p.error = err.message === "Failed to fetch" ? "Couldn't reach server" : err.message;
+    }
+    renderGallery();
+  }
+}
+
+function renderGallery() {
   const gallery = document.getElementById("upload-gallery");
-  const pendingThumb = pending
-    ? `<button type="button" class="gallery-thumb pending">Uploading…</button>`
-    : "";
-  gallery.innerHTML = pendingThumb + galleryItems.map((img, i) => `
+  const pend = pendingUploads.map((p, i) => `
+    <button type="button" class="gallery-thumb pending${p.error ? " err" : ""}" data-pending="${i}"
+      title="${escapeAttr(p.error ? p.name + ": " + p.error + " (click to dismiss)" : p.name)}">
+      ${p.error ? "&#10005; " + escapeAttr(p.error) : "Uploading&hellip;"}
+    </button>`).join("");
+  gallery.innerHTML = pend + galleryItems.map((img, i) => `
     <button type="button" class="gallery-thumb" data-index="${i}">
       <img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy">
     </button>
   `).join("");
   gallery.querySelectorAll(".gallery-thumb[data-index]").forEach((btn) => {
     btn.addEventListener("click", () => openLightbox(galleryItems[Number(btn.dataset.index)]));
+  });
+  gallery.querySelectorAll(".gallery-thumb[data-pending]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const p = pendingUploads[Number(btn.dataset.pending)];
+      if (p && p.error) { pendingUploads = pendingUploads.filter((x) => x !== p); renderGallery(); }
+    });
   });
 }
 
@@ -695,6 +766,7 @@ function openLightbox(image) {
   document.getElementById("lightbox").style.display = "flex";
 }
 function closeLightbox() {
+  saveCredits(true); // closing no longer throws away credit edits
   document.getElementById("lightbox").style.display = "none";
   lightboxImage = null;
 }
@@ -749,24 +821,27 @@ document.getElementById("lightbox-copy").addEventListener("click", async () => {
   flashButton("lightbox-copy", "Copied!");
 });
 
-document.getElementById("lightbox-save").addEventListener("click", async () => {
+async function saveCredits(silent) {
   if (!lightboxImage) return;
-  // Drop fully-empty rows (someone hit + Add credit and changed their mind) before saving.
-  const credits = lightboxCredits.filter((c) => c.role.trim() || c.name.trim() || c.url.trim());
-  const slug = document.getElementById("f-slug").value.trim();
-  const res = await fetch(`${API_BASE}/api/gallery/${slug}/${lightboxImage.id}`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: lightboxImage.name, credits }),
-  });
-  if (res.ok) {
-    lightboxImage.credits = credits;
-    flashButton("lightbox-save", "Saved!");
-  } else {
-    flashButton("lightbox-save", "Failed");
+  const img = lightboxImage;
+  const credits = lightboxCredits.filter((c) => (c.role || "").trim() || (c.name || "").trim() || (c.url || "").trim());
+  if (JSON.stringify(credits) === JSON.stringify(img.credits || [])) {
+    if (!silent) flashButton("lightbox-save", "Saved!");
+    return;
   }
-});
+  const slug = document.getElementById("f-slug").value.trim();
+  try {
+    const res = await fetch(`${API_BASE}/api/gallery/${slug}/${img.id}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: img.name, credits }),
+    });
+    if (res.ok) { img.credits = credits; if (!silent) flashButton("lightbox-save", "Saved!"); }
+    else if (!silent) flashButton("lightbox-save", "Failed");
+  } catch { if (!silent) flashButton("lightbox-save", "Failed"); }
+}
+document.getElementById("lightbox-save").addEventListener("click", () => saveCredits(false));
 
 document.getElementById("lightbox-delete").addEventListener("click", async () => {
   if (!lightboxImage) return;
@@ -779,6 +854,7 @@ document.getElementById("lightbox-delete").addEventListener("click", async () =>
   if (res.ok) {
     galleryItems = galleryItems.filter((img) => img.id !== lightboxImage.id);
     renderGallery();
+    lightboxImage = null; // deleted: don't try to save credits for it
     closeLightbox();
   } else {
     flashButton("lightbox-delete", "Failed");
@@ -823,6 +899,23 @@ window.addEventListener("beforeunload", (e) => { if (dirty) e.preventDefault(); 
 
 ["f-name","f-slug","f-artist","f-designer","f-artist-url","f-designer-url","f-avatar-url"].forEach((id) => {
   document.getElementById(id).addEventListener("input", markDirty);
+});
+
+// ---------- Small conveniences ----------
+
+let lastAutoSlug = "";
+document.getElementById("f-name").addEventListener("input", (e) => {
+  const slugEl = document.getElementById("f-slug");
+  if (!currentSlug && (!slugEl.value || slugEl.value === lastAutoSlug)) {
+    lastAutoSlug = slugify(e.target.value);
+    slugEl.value = lastAutoSlug;
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    e.preventDefault();
+    if (document.getElementById("editor-screen").style.display !== "none") document.getElementById("save-btn").click();
+  }
 });
 
 // ---------- Boot ----------
