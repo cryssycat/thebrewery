@@ -153,10 +153,34 @@ const collection = params.get("collection");
 let isAuthed = false;
 let allCharacters = [];
 
-if (!collection) {
-  showState("No member specified.");
-} else {
-  checkAuth().then((authed) => { isAuthed = authed; loadMember(collection); });
+checkAuth().then((authed) => {
+  isAuthed = authed;
+  if (collection) loadMember(collection);
+  else showMemberPicker();
+});
+
+// Opened without ?collection=... : jump straight in if there's one member, otherwise offer a picker.
+async function showMemberPicker() {
+  document.getElementById("search-input").style.display = "none";
+  document.getElementById("header").innerHTML =
+    '<h1 id="member-title">Members</h1><p id="member-count">Pick a member to browse their characters.</p>';
+  try {
+    const res = await fetch(`${API_BASE}/api/members`);
+    if (!res.ok) throw new Error();
+    const members = await res.json();
+    if (!members.length) return showState("No members set up yet.");
+    if (members.length === 1) {
+      location.replace(`member.html?collection=${encodeURIComponent(members[0].collection)}`);
+      return;
+    }
+    document.getElementById("grid").innerHTML = members.map((m) => `
+      <div class="glass card">
+        <a class="card-link" href="member.html?collection=${encodeURIComponent(m.collection)}" aria-label="View ${escapeAttr(m.collection)}"></a>
+        <p class="card-name">${escapeHtml(m.collection)}</p>
+      </div>`).join("");
+  } catch {
+    showState("Couldn't load members right now.");
+  }
 }
 
 document.getElementById("search-input").addEventListener("input", (e) => {
