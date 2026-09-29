@@ -392,6 +392,12 @@ let dirty = false;
 
 // ---------- Auth ----------
 
+// Pulls the worker's { error: "..." } message out of a failed response.
+async function apiError(res) {
+  try { const j = await res.json(); if (j && j.error) return j.error; } catch {}
+  return `Server error ${res.status}`;
+}
+
 // Every API call goes through here so the login token is sent as a bearer header.
 // (Cross-site cookies between pages.dev and workers.dev are blocked by browsers.)
 function apiFetch(url, opts = {}) {
@@ -640,7 +646,9 @@ document.getElementById("save-btn").addEventListener("click", async () => {
   if (res.ok) { markClean(); await loadCharacterList(); }
   else {
     setStatus("error");
-    if (res.status === 401) alert("Your session expired. Reload the page and sign in again (your edits stay in the editor until you do).");
+    alert(res.status === 401
+      ? "Your session expired. Reload the page and sign in again (your edits stay in the editor until you do)."
+      : `Save failed: ${await apiError(res)}`);
   }
 });
 
@@ -728,7 +736,7 @@ async function uploadFiles(files) {
       form.append("file", await shrink(file));
       form.append("slug", slug);
       const res = await apiFetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
-      if (!res.ok) throw new Error(res.status === 401 ? "Session expired: reload and sign in" : `Server error ${res.status}`);
+      if (!res.ok) throw new Error(res.status === 401 ? "Session expired: reload and sign in" : await apiError(res));
       const item = await res.json();
       galleryItems.push(item);
       pendingUploads = pendingUploads.filter((x) => x !== p);
@@ -932,7 +940,7 @@ document.getElementById("delete-btn").addEventListener("click", async () => {
     if (!res.ok) {
       alert(res.status === 401
         ? "Your session expired. Reload the page and sign in again."
-        : `Delete failed (server said ${res.status}).`);
+        : `Delete failed: ${await apiError(res)}`);
       return;
     }
     resetForm();
