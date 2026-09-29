@@ -142,6 +142,10 @@
 
 <script>
 const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
+const authHeaders = () => {
+  const t = localStorage.getItem("brewery_token");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
 
 const params = new URLSearchParams(window.location.search);
 const collection = params.get("collection");
@@ -175,7 +179,7 @@ function applySearch(query) {
 
 async function checkAuth() {
   try {
-    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include", headers: authHeaders() });
     if (res.ok) localStorage.setItem("brewery_editor", "1");
     return res.ok || localStorage.getItem("brewery_editor") === "1";
   } catch {
