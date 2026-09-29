@@ -392,9 +392,20 @@ let dirty = false;
 
 // ---------- Auth ----------
 
+// Every API call goes through here so the login token is sent as a bearer header.
+// (Cross-site cookies between pages.dev and workers.dev are blocked by browsers.)
+function apiFetch(url, opts = {}) {
+  const token = localStorage.getItem("brewery_token");
+  return fetch(url, {
+    ...opts,
+    credentials: "include",
+    headers: { ...(opts.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+}
+
 async function checkAuth() {
   try {
-    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include" });
+    const res = await apiFetch(`${API_BASE}/api/session`, { credentials: "include" });
     if (res.ok) localStorage.setItem("brewery_editor", "1");
     return res.ok;
   } catch { return false; }
@@ -411,13 +422,15 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   errorEl.style.display = "none";
 
   try {
-    const res = await fetch(`${API_BASE}/api/login`, {
+    const res = await apiFetch(`${API_BASE}/api/login`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
     if (!res.ok) throw new Error("bad login");
+    const { token } = await res.json();
+    if (token) localStorage.setItem("brewery_token", token);
     localStorage.setItem("brewery_editor", "1");
     await enterEditor();
   } catch {
@@ -427,6 +440,8 @@ document.getElementById("login-btn").addEventListener("click", async () => {
 
 document.getElementById("logout-btn").addEventListener("click", () => {
   document.cookie = "session=; Path=/; Max-Age=0";
+  localStorage.removeItem("brewery_token");
+  localStorage.removeItem("brewery_editor");
   document.getElementById("editor-screen").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
 });
@@ -452,14 +467,14 @@ async function enterEditor() {
 }
 
 async function loadMembers() {
-  const res = await fetch(`${API_BASE}/api/members`, { credentials: "include" });
+  const res = await apiFetch(`${API_BASE}/api/members`, { credentials: "include" });
   const members = res.ok ? await res.json() : [];
   const select = document.getElementById("f-collection");
   select.innerHTML = members.map((m) => `<option value="${m.collection}">${m.collection}</option>`).join("");
 }
 
 async function loadTagSuggestions() {
-  const res = await fetch(`${API_BASE}/api/tags`, { credentials: "include" });
+  const res = await apiFetch(`${API_BASE}/api/tags`, { credentials: "include" });
   const tags = res.ok ? await res.json() : [];
   const datalist = document.getElementById("tag-suggestions");
   datalist.innerHTML = tags.map((t) => `<option value="${escapeAttr(t)}">`).join("");
@@ -508,7 +523,7 @@ function updatePreview() {
 // ---------- Character list / load / save ----------
 
 async function loadCharacterList() {
-  const res = await fetch(`${API_BASE}/api/characters`, { credentials: "include" });
+  const res = await apiFetch(`${API_BASE}/api/characters`, { credentials: "include" });
   const characters = await res.json();
   const select = document.getElementById("slug-select");
   select.innerHTML = `<option value="">+ New character</option>` +
@@ -519,7 +534,7 @@ async function loadCharacterList() {
 let currentTags = [];
 
 async function loadCharacter(slug) {
-  const res = await fetch(`${API_BASE}/api/characters/${slug}`, { credentials: "include" });
+  const res = await apiFetch(`${API_BASE}/api/characters/${slug}`, { credentials: "include" });
   if (!res.ok) return resetForm();
   const c = await res.json();
   currentSlug = c.slug;
@@ -615,7 +630,7 @@ document.getElementById("save-btn").addEventListener("click", async () => {
     visibility: isPublic ? "public" : "draft",
   };
 
-  const res = await fetch(`${API_BASE}/api/characters/${slug}`, {
+  const res = await apiFetch(`${API_BASE}/api/characters/${slug}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -646,7 +661,7 @@ async function loadGallery(slug) {
   galleryItems = [];
   if (!slug) return renderGallery();
   try {
-    const res = await fetch(`${API_BASE}/api/gallery/${encodeURIComponent(slug)}`, { credentials: "include" });
+    const res = await apiFetch(`${API_BASE}/api/gallery/${encodeURIComponent(slug)}`, { credentials: "include" });
     galleryItems = res.ok ? await res.json() : [];
   } catch {
     galleryItems = [];
@@ -712,7 +727,7 @@ async function uploadFiles(files) {
       const form = new FormData();
       form.append("file", await shrink(file));
       form.append("slug", slug);
-      const res = await fetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
+      const res = await apiFetch(`${API_BASE}/api/upload`, { method: "POST", credentials: "include", body: form });
       if (!res.ok) throw new Error(res.status === 401 ? "Session expired: reload and sign in" : `Server error ${res.status}`);
       const item = await res.json();
       galleryItems.push(item);
@@ -831,7 +846,7 @@ async function saveCredits(silent) {
   }
   const slug = document.getElementById("f-slug").value.trim();
   try {
-    const res = await fetch(`${API_BASE}/api/gallery/${slug}/${img.id}`, {
+    const res = await apiFetch(`${API_BASE}/api/gallery/${slug}/${img.id}`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -847,7 +862,7 @@ document.getElementById("lightbox-delete").addEventListener("click", async () =>
   if (!lightboxImage) return;
   if (!confirm("Delete this image? This can't be undone.")) return;
   const slug = document.getElementById("f-slug").value.trim();
-  const res = await fetch(`${API_BASE}/api/gallery/${slug}/${lightboxImage.id}`, {
+  const res = await apiFetch(`${API_BASE}/api/gallery/${slug}/${lightboxImage.id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -910,7 +925,7 @@ document.getElementById("delete-btn").addEventListener("click", async () => {
   if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
 
   try {
-    const res = await fetch(`${API_BASE}/api/characters/${encodeURIComponent(slug)}`, {
+    const res = await apiFetch(`${API_BASE}/api/characters/${encodeURIComponent(slug)}`, {
       method: "DELETE",
       credentials: "include",
     });
