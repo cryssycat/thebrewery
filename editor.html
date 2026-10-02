@@ -265,6 +265,7 @@
   .code-tabs button{flex:1 0 auto;padding:8px 10px}
   .code-tabs button.has::after{content:" \2022"}
   select{color-scheme:dark}
+  select optgroup{background:#131c2e;color:#8b94a8}
   select option{background:#131c2e;color:#e7ecf5}
 </style>
 </head>
@@ -605,8 +606,15 @@ async function loadCharacterList() {
   const res = await apiFetch(`${API_BASE}/api/characters`, { credentials: "include" });
   const characters = await res.json();
   const select = document.getElementById("slug-select");
-  select.innerHTML = `<option value="">+ New character</option>` +
-    characters.map((c) => `<option value="${c.slug}">${c.name || c.slug}</option>`).join("");
+  const groups = {};
+  characters.forEach((c) => (groups[c.collection || ""] = groups[c.collection || ""] || []).push(c));
+  const known = [...SITE.sections.map((x) => x.collection), SITE.homeCollection];
+  const keys = [...known.filter((k) => groups[k]), ...Object.keys(groups).filter((k) => !known.includes(k))];
+  const labelOf = (k) => k === SITE.homeCollection ? "Site pages" : ((sectionOf(k) || {}).label || k || "No section");
+  const byName = (a, b) => (a.name || a.slug).localeCompare(b.name || b.slug);
+  select.innerHTML = `<option value="">+ New character</option>` + keys.map((k) =>
+    `<optgroup label="${escapeAttr(labelOf(k))}">${groups[k].sort(byName).map((c) =>
+      `<option value="${c.slug}">${escapeHtml(c.name || c.slug)}</option>`).join("")}</optgroup>`).join("");
   select.onchange = () => select.value ? loadCharacter(select.value) : resetForm();
 }
 
