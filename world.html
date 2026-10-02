@@ -281,7 +281,7 @@ function renderHeader(c) {
   if (c.designer) credits.push(creditItem("Design", c.designer, c.designer_url));
   document.getElementById("credits-row").innerHTML = credits.join("");
 
-  const tags = c.tags || [];
+  const tags = visibleTags(c);
   document.getElementById("tags-row").innerHTML = tags.map((t) => `<span class="tag-pill">${escapeHtml(t)}</span>`).join("");
 
   document.getElementById("header-loading").style.display = "none";
