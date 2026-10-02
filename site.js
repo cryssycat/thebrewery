@@ -46,9 +46,12 @@ function buildProfile(meta, tabs, body) {
 function renderNav(active) {
   const el = document.getElementById("site-nav");
   if (!el) return;
+  if (!document.getElementById("nav-style")) {
   const st = document.createElement("style");
+  st.id = "nav-style";
   st.textContent = "#site-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}#site-nav a{padding:9px 18px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);font-size:13px;font-weight:500}#site-nav a:hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}#site-nav a.active{background:var(--accent-dim,#4c5f9c);border-color:var(--accent-dim,#4c5f9c);color:#fff}";
   document.head.appendChild(st);
+  }
   const link = (href, label, on) => `<a href="${href}"${on ? ' class="active"' : ""}>${label}</a>`;
   el.innerHTML = link("index.html", "Home", active === "home") + SITE.sections.map((s) =>
     link(`member.html?collection=${encodeURIComponent(s.collection)}`, s.label, active === s.collection)).join("");
