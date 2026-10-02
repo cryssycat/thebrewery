@@ -127,7 +127,7 @@
 
 <div class="wrap">
   <div class="topbar">
-    <a class="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
+    <a class="back-link" id="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
     <span id="edit-link-wrap"><a class="edit-link" id="edit-link" href="#">Edit this character</a></span>
   </div>
 
@@ -162,6 +162,7 @@
   </div>
 </div>
 
+<script src="site.js"></script>
 <script>
 const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
 const authHeaders = () => {
@@ -185,6 +186,13 @@ async function loadProfile(slug) {
     if (!res.ok) return showState("Couldn't load this profile right now.");
 
     const c = await res.json();
+    const sec = sectionOf(c.collection);
+    if (sec && sec.worlds) return location.replace(`world.html?slug=${encodeURIComponent(c.slug)}`);
+    if (sec) {
+      const b = document.getElementById("back-link");
+      b.href = `member.html?collection=${encodeURIComponent(sec.collection)}`;
+      b.innerHTML = `&larr; Back to ${escapeHtml(sec.label)}`;
+    }
     renderHeader(c);
     renderProfile(c);
     loadGallery(slug);
@@ -265,6 +273,8 @@ function renderHeader(c) {
   const credits = [];
   if (c.artist) credits.push(creditItem("Art", c.artist, c.artist_url));
   if (c.designer) credits.push(creditItem("Design", c.designer, c.designer_url));
+  const owners = (parseProfile(c.profile_html).meta.owners || []).filter(Boolean);
+  if (owners.length) credits.push(`<span class="credit-item">Co-owned by: <strong>${owners.map(escapeHtml).join(", ")}</strong></span>`);
   document.getElementById("credits-row").innerHTML = credits.join("");
 
   const tags = c.tags || [];
