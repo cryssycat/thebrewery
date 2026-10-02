@@ -126,6 +126,7 @@
 <body>
 
 <div class="wrap">
+  <div id="site-nav"></div>
   <div class="topbar">
     <a class="back-link" id="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
     <span id="edit-link-wrap"><a class="edit-link" id="edit-link" href="#">Edit this character</a></span>
@@ -170,6 +171,7 @@ const authHeaders = () => {
   return t ? { Authorization: `Bearer ${t}` } : {};
 };
 
+renderNav(null);
 const params = new URLSearchParams(window.location.search);
 const slug = params.get("slug");
 
@@ -187,6 +189,7 @@ async function loadProfile(slug) {
 
     const c = await res.json();
     const sec = sectionOf(c.collection);
+    renderNav(c.collection);
     if (sec && sec.worlds) return location.replace(`world.html?slug=${encodeURIComponent(c.slug)}`);
     if (sec) {
       const b = document.getElementById("back-link");
