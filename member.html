@@ -123,6 +123,12 @@
   .grid.worlds{grid-template-columns:1fr}
   .worlds .card-avatar{aspect-ratio:4/1;font-size:48px}
   .worlds .card-name{font-size:18px}
+  .folder{margin-bottom:22px}
+  .folder summary{cursor:pointer;font-size:16px;font-weight:600;margin-bottom:12px;list-style:none}
+  .folder summary::-webkit-details-marker{display:none}
+  .folder summary::before{content:"\25B8  ";color:var(--text-dim)}
+  .folder[open] summary::before{content:"\25BE  "}
+  .folder summary span{font-size:12px;color:var(--text-dim);font-weight:400;margin-left:8px}
 </style>
 </head>
 <body>
@@ -229,7 +235,7 @@ function renderGrid(characters, isSearchResult) {
   document.getElementById("state").style.display = "none";
   const worlds = (sectionOf(collection) || {}).worlds;
   grid.className = worlds ? "grid worlds" : "grid";
-  grid.innerHTML = characters.map((c) => `
+  const card = (c) => `
     <div class="glass card">
       <a class="card-link" href="${worlds ? "world" : "profile"}.html?slug=${encodeURIComponent(c.slug)}" aria-label="View ${escapeAttr(c.name || c.slug)}"></a>
       ${isAuthed ? `<a class="card-edit" href="editor.html?slug=${encodeURIComponent(c.slug)}">Edit</a>` : ""}
@@ -238,12 +244,21 @@ function renderGrid(characters, isSearchResult) {
       <p class="card-meta">${c.artist ? "Art by " + escapeHtml(c.artist) : "&nbsp;"}</p>
       ${tagsHtml(c)}
     </div>
-  `).join("");
+  `;
+  const fsec = sectionOf(collection) || {};
+  if (fsec.folders) {
+    grid.className = "folders";
+    const groups = {};
+    characters.forEach((c) => { const f = folderOf(c); (groups[f] = groups[f] || []).push(c); });
+    const names = Object.keys(groups).sort((a, b) => !a ? 1 : !b ? -1 : a.localeCompare(b));
+    grid.innerHTML = names.map((n) => `<details class="folder" open><summary>${escapeHtml(n || "Unsorted")}<span>${groups[n].length}</span></summary><div class="grid">${groups[n].map(card).join("")}</div></details>`).join("");
+  } else grid.innerHTML = characters.map(card).join("");
 }
 
 function tagsHtml(c) {
-  if (!c.tags || c.tags.length === 0) return "";
-  return `<div class="card-tags">${c.tags.map((t) => `<span class="card-tag">${escapeHtml(t)}</span>`).join("")}</div>`;
+  const tags = visibleTags(c);
+  if (!tags.length) return "";
+  return `<div class="card-tags">${tags.map((t) => `<span class="card-tag">${escapeHtml(t)}</span>`).join("")}</div>`;
 }
 
 function avatarHtml(c) {
