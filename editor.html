@@ -312,6 +312,7 @@
       <div class="field"><label>Name</label><input id="f-name"></div>
       <div class="field"><label>Slug</label><input id="f-slug" placeholder="new-character-slug"></div>
       <div class="field"><label>Section</label><select id="f-collection"></select></div>
+      <div class="field" id="folder-field" style="display:none"><label>Folder (blank = Unsorted)</label><input id="f-folder" list="folder-suggestions" placeholder="e.g. Mains"><datalist id="folder-suggestions"></datalist><button type="button" class="btn ghost" id="rename-folder-btn" style="margin-top:6px;font-size:12px">Rename this folder&hellip;</button></div>
       <div class="field" id="owners-field" style="display:none"><label>Co-owned by (up to 5, empty slots are hidden)</label><div id="owner-inputs"></div></div>
       <div class="field"><label>Avatar</label><input id="f-avatar-url" placeholder="Set via gallery, or paste a URL"></div>
 
@@ -493,7 +494,7 @@ async function loadTagSuggestions() {
   const res = await apiFetch(`${API_BASE}/api/tags`, { credentials: "include" });
   const tags = res.ok ? await res.json() : [];
   const datalist = document.getElementById("tag-suggestions");
-  datalist.innerHTML = tags.map((t) => `<option value="${escapeAttr(t)}">`).join("");
+  datalist.innerHTML = tags.filter((t) => !String(t).startsWith("folder:")).map((t) => `<option value="${escapeAttr(t)}">`).join("");
 }
 
 // ---------- Section modes: world tabs + co-owners ----------
@@ -501,6 +502,7 @@ async function loadTagSuggestions() {
 let worldTabs = {};   // id -> {title, html}
 let activeTab = "main";
 let loadedMeta = {};
+let allChars = [];
 let quiet = false;    // true while we swap editor text programmatically
 const sec = () => sectionOf(document.getElementById("f-collection").value) || {};
 
@@ -510,6 +512,33 @@ ownerBox.innerHTML = Array.from({ length: SITE.maxOwners }, (_, i) =>
 ownerBox.querySelectorAll("input").forEach((i) => i.addEventListener("input", markDirty));
 const getOwners = () => [...ownerBox.querySelectorAll("input")].map((i) => i.value.trim()).filter(Boolean);
 const setOwners = (list) => ownerBox.querySelectorAll("input").forEach((i, n) => { i.value = list[n] || ""; });
+
+function saveTags() {
+  const f = document.getElementById("f-folder").value.trim().replace(/\s+/g, " ");
+  return sec().folders && f ? [...currentTags, "folder:" + f] : [...currentTags];
+}
+document.getElementById("f-folder").addEventListener("input", markDirty);
+
+document.getElementById("rename-folder-btn").addEventListener("click", async () => {
+  const old = document.getElementById("f-folder").value.trim();
+  if (!old) return alert("Pick or type the folder's current name first.");
+  const col = document.getElementById("f-collection").value;
+  const members = allChars.filter((c) => c.collection === col && folderOf(c) === old);
+  const nu = (prompt(`Rename folder "${old}" (${members.length} characters) to:`, old) || "").trim();
+  if (!nu || nu === old) return;
+  for (const m of members) {
+    const r = await apiFetch(`${API_BASE}/api/characters/${encodeURIComponent(m.slug)}`, { credentials: "include" });
+    if (!r.ok) { alert(`Couldn't load ${m.name || m.slug}; stopped.`); break; }
+    const c = await r.json();
+    const tags = (c.tags || []).filter((t) => !String(t).startsWith("folder:")).concat("folder:" + nu);
+    const body = { name: c.name, collection: c.collection, avatar_url: c.avatar_url, tags, profile_html: c.profile_html, profile_css: c.profile_css, artist: c.artist, artist_url: c.artist_url, designer: c.designer, designer_url: c.designer_url, visibility: c.visibility };
+    const w = await apiFetch(`${API_BASE}/api/characters/${encodeURIComponent(m.slug)}`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!w.ok) { alert(`Couldn't save ${m.name || m.slug}; stopped.`); break; }
+  }
+  await loadCharacterList();
+  if (document.getElementById("f-folder").value.trim() === old) document.getElementById("f-folder").value = nu;
+  applyMode();
+});
 
 function flushTab() {
   if (activeTab !== "main" && activeTab !== "css") worldTabs[activeTab] = { ...(worldTabs[activeTab] || {}), html: cmHtml.getValue() };
@@ -553,6 +582,10 @@ document.getElementById("f-tab-title").addEventListener("input", (e) => {
 function applyMode() {
   const s = sec();
   document.getElementById("owners-field").style.display = s.coOwned ? "block" : "none";
+  document.getElementById("folder-field").style.display = s.folders ? "block" : "none";
+  const col = document.getElementById("f-collection").value;
+  document.getElementById("folder-suggestions").innerHTML = [...new Set(allChars.filter((c) => c.collection === col).map(folderOf).filter(Boolean))]
+    .sort().map((f) => `<option value="${escapeAttr(f)}">`).join("");
   document.getElementById("f-avatar-url").previousElementSibling.textContent = s.worlds ? "Banner image" : "Avatar";
   renderCodeTabs();
 }
@@ -606,6 +639,7 @@ async function loadCharacterList() {
   const res = await apiFetch(`${API_BASE}/api/characters`, { credentials: "include" });
   const characters = await res.json();
   const select = document.getElementById("slug-select");
+  allChars = characters;
   const groups = {};
   characters.forEach((c) => (groups[c.collection || ""] = groups[c.collection || ""] || []).push(c));
   const known = [...SITE.sections.map((x) => x.collection), SITE.homeCollection];
@@ -640,7 +674,8 @@ async function loadCharacter(slug) {
   document.getElementById("f-designer").value = c.designer || "";
   document.getElementById("f-artist-url").value = c.artist_url || "";
   document.getElementById("f-designer-url").value = c.designer_url || "";
-  currentTags = Array.isArray(c.tags) ? [...c.tags] : [];
+  currentTags = (Array.isArray(c.tags) ? c.tags : []).filter((t) => !String(t).startsWith("folder:"));
+  document.getElementById("f-folder").value = folderOf(c);
   renderTagPills();
   const p = parseProfile(c.profile_html);
   worldTabs = {};
@@ -665,7 +700,7 @@ function resetForm() {
   document.getElementById("f-collection").selectedIndex = 0;
   currentTags = [];
   renderTagPills();
-  worldTabs = {}; loadedMeta = {}; activeTab = "main"; setOwners([]);
+  worldTabs = {}; loadedMeta = {}; activeTab = "main"; setOwners([]); document.getElementById("f-folder").value = "";
   cmHtml.setValue("");
   cmCss.setValue("");
   applyMode();
@@ -719,7 +754,7 @@ document.getElementById("save-btn").addEventListener("click", async () => {
     name: document.getElementById("f-name").value,
     collection: document.getElementById("f-collection").value,
     avatar_url: document.getElementById("f-avatar-url").value,
-    tags: currentTags,
+    tags: saveTags(),
     profile_html: buildHtml(),
     profile_css: cmCss.getValue(),
     artist: document.getElementById("f-artist").value,
