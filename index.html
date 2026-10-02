@@ -3,246 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Character hub</title>
+<title>The Brewery</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-  :root{
-    --bg-deep:#0b1120;
-    --bg-panel:rgba(255,255,255,0.04);
-    --border:rgba(255,255,255,0.09);
-    --border-strong:rgba(255,255,255,0.18);
-    --text:#e7ecf5;
-    --text-dim:#8b94a8;
-    --accent:#7f9cf5;
-    --accent-dim:#4c5f9c;
-    --radius:14px;
-    font-family:-apple-system,"Segoe UI",Inter,sans-serif;
-  }
+  :root{--bg-deep:#0b1120;--bg-panel:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.09);--border-strong:rgba(255,255,255,0.18);--text:#e7ecf5;--text-dim:#8b94a8;--accent:#7f9cf5;--accent-dim:#4c5f9c;--radius:14px;font-family:-apple-system,"Segoe UI",Inter,sans-serif}
   *{box-sizing:border-box}
-  body{
-    margin:0;
-    min-height:100vh;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(127,156,245,0.10), transparent 40%),
-      radial-gradient(circle at 85% 90%, rgba(127,156,245,0.06), transparent 45%),
-      var(--bg-deep);
-    color:var(--text);
-  }
+  body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 10%,rgba(127,156,245,0.10),transparent 40%),radial-gradient(circle at 85% 90%,rgba(127,156,245,0.06),transparent 45%),var(--bg-deep);color:var(--text)}
   a{color:var(--accent);text-decoration:none}
-
-  .wrap{max-width:1040px;margin:0 auto;padding:48px 20px 64px}
-
-  #site-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
-  #editor-shortcut{font-size:13px;color:var(--text-dim);padding:6px 14px;border:1px solid var(--border);border-radius:999px}
-  #editor-shortcut:hover{color:var(--text);border-color:var(--border-strong)}
-  #site-title{font-size:28px;font-weight:600;margin:0}
-  #site-subtitle{font-size:14px;color:var(--text-dim);margin:0 0 32px}
-
-  .glass{
-    background:var(--bg-panel);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-  }
-
-  /* Tab switcher */
-  #tabs{
-    display:flex;
-    gap:8px;
-    margin-bottom:24px;
-    flex-wrap:wrap;
-  }
-  .tab-btn{
-    padding:9px 18px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    background:transparent;
-    color:var(--text-dim);
-    font-size:13px;
-    font-weight:500;
-    cursor:pointer;
-    transition:background .15s, color .15s, border-color .15s;
-  }
-  .tab-btn:hover{border-color:var(--border-strong);color:var(--text)}
-  .tab-btn.active{background:var(--accent-dim);border-color:var(--accent-dim);color:#fff}
-
-  #panel-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
-  #panel-title{font-size:18px;font-weight:600;margin:0}
-  #panel-link{font-size:13px}
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
-    gap:16px;
-  }
-
-  .card{display:block;padding:18px;transition:border-color .15s, transform .1s}
-  .card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
-  .card-avatar{
-    width:100%;aspect-ratio:1;border-radius:10px;
-    background-size:cover;background-position:center;
-    background-color:rgba(255,255,255,0.06);
-    border:1px solid var(--border);
-    margin-bottom:12px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:36px;font-weight:600;color:var(--text-dim);
-  }
-  .card-name{font-size:15px;font-weight:500;color:var(--text);margin:0 0 6px}
-  .card-meta{font-size:12px;color:var(--text-dim)}
-  .card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-  .card-tag{
-    font-size:11px;padding:2px 8px;border-radius:999px;
-    border:1px solid var(--border);color:var(--text-dim);
-  }
-
-  .state{text-align:center;padding:48px 24px;color:var(--text-dim);font-size:14px}
-
-  .skeleton-card{height:76px;border-radius:var(--radius)}
-  .skeleton{
-    height:100%;width:100%;border-radius:var(--radius);
-    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-    background-size:200% 100%;
-    animation:shimmer 1.4s infinite;
-  }
-  .tab-skeleton{width:110px;height:34px;border-radius:999px}
-  @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-  @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .brand{font-size:15px;font-weight:600}
+  #edit-link{display:none;font-size:13px;color:var(--text-dim);padding:6px 14px;border:1px solid var(--border);border-radius:999px}
+  #edit-link:hover{color:var(--text);border-color:var(--border-strong)}
+  .glass{background:var(--bg-panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:var(--radius)}
+  #home-body{padding:28px;line-height:1.6;font-size:15px}
+  #home-body img{max-width:100%;border-radius:8px}
 </style>
 </head>
 <body>
-
 <div class="wrap">
-  <div id="site-header">
-    <h1 id="site-title">Character hub</h1>
-    <a id="editor-shortcut" href="editor.html">Editor &rarr;</a>
-  </div>
-  <p id="site-subtitle">Browse characters by member.</p>
-
-  <div id="tabs">
-    <div class="skeleton tab-skeleton"></div>
-    <div class="skeleton tab-skeleton"></div>
-  </div>
-
-  <div id="panel-header" style="display:none">
-    <h2 id="panel-title"></h2>
-    <a id="panel-link" href="#">View full gallery &rarr;</a>
-  </div>
-
-  <div class="grid" id="grid"></div>
-  <div id="state" class="state" style="display:none"></div>
+  <div class="top"><span class="brand">The Brewery</span><a id="edit-link" href="#">Edit this page</a></div>
+  <div id="site-nav"></div>
+  <div class="glass"><div id="home-body"></div></div>
 </div>
-
+<script src="site.js"></script>
 <script>
 const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
 const authHeaders = () => {
   const t = localStorage.getItem("brewery_token");
   return t ? { Authorization: `Bearer ${t}` } : {};
 };
+renderNav("home");
+loadHome();
 
-let activeCollection = null;
-
-loadMembers();
-showEditorShortcutIfAuthed();
-
-async function showEditorShortcutIfAuthed() {
+async function loadHome() {
+  let c = null;
   try {
-    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include", headers: authHeaders() });
-    if (res.ok) document.getElementById("editor-shortcut").style.display = "inline";
-  } catch {
-    // Not logged in, or the check failed — leave it hidden either way.
+    const r = await fetch(`${API_BASE}/api/characters/${SITE.homeSlug}`, { headers: authHeaders() });
+    if (r.ok) c = await r.json();
+  } catch {}
+  const p = parseProfile(c && c.profile_html);
+  const has = c && p.body;
+  document.getElementById("home-body").innerHTML = has ? p.body
+    : "<h1>Welcome to The Brewery</h1><p>Our characters, worlds, and mascots all live here. Pick a section above to start browsing.</p>";
+  if (has && c.profile_css) {
+    const s = document.createElement("style");
+    s.textContent = c.profile_css;
+    document.head.appendChild(s);
   }
-}
-
-async function loadMembers() {
   try {
-    const res = await fetch(`${API_BASE}/api/members`);
-    if (!res.ok) throw new Error();
-    const members = await res.json();
-    renderTabs(members);
-    if (members.length) selectTab(members[0].collection);
-    else showState("No members set up yet.");
-  } catch {
-    document.getElementById("tabs").innerHTML = "";
-    showState("Couldn't load members right now.");
-  }
+    const r = await fetch(`${API_BASE}/api/session`, { credentials: "include", headers: authHeaders() });
+    if (r.ok) {
+      const a = document.getElementById("edit-link");
+      a.href = c ? `editor.html?slug=${SITE.homeSlug}`
+        : `editor.html?new=1&collection=${encodeURIComponent(SITE.homeCollection)}&slug=${SITE.homeSlug}&name=About%20us`;
+      a.style.display = "inline";
+    }
+  } catch {}
 }
-
-function renderTabs(members) {
-  const tabs = document.getElementById("tabs");
-  tabs.innerHTML = members.map((m) => `
-    <button class="tab-btn" data-collection="${escapeAttr(m.collection)}">${escapeHtml(m.collection)}</button>
-  `).join("");
-  tabs.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => selectTab(btn.dataset.collection));
-  });
-}
-
-async function selectTab(collection) {
-  activeCollection = collection;
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.collection === collection);
-  });
-
-  document.getElementById("panel-header").style.display = "flex";
-  document.getElementById("panel-title").textContent = collection;
-  document.getElementById("panel-link").href = `member.html?collection=${encodeURIComponent(collection)}`;
-
-  document.getElementById("state").style.display = "none";
-  document.getElementById("grid").innerHTML = Array(4).fill(
-    '<div class="glass card skeleton-card"><div class="skeleton"></div></div>'
-  ).join("");
-
-  try {
-    const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`);
-    if (!res.ok) throw new Error();
-    const characters = await res.json();
-    if (collection !== activeCollection) return; // a newer tab click came in first
-    renderGrid(characters);
-  } catch {
-    if (collection === activeCollection) showState("Couldn't load this gallery right now.");
-  }
-}
-
-function renderGrid(characters) {
-  const grid = document.getElementById("grid");
-  if (characters.length === 0) {
-    grid.innerHTML = "";
-    return showState("No public characters here yet.");
-  }
-  grid.innerHTML = characters.slice(0, 8).map((c) => `
-    <a class="glass card" href="profile.html?slug=${encodeURIComponent(c.slug)}">
-      ${avatarHtml(c)}
-      <p class="card-name">${escapeHtml(c.name || c.slug)}</p>
-      <p class="card-meta">${c.artist ? "Art by " + escapeHtml(c.artist) : "&nbsp;"}</p>
-      ${tagsHtml(c)}
-    </a>
-  `).join("");
-}
-
-function tagsHtml(c) {
-  if (!c.tags || c.tags.length === 0) return "";
-  return `<div class="card-tags">${c.tags.map((t) => `<span class="card-tag">${escapeHtml(t)}</span>`).join("")}</div>`;
-}
-
-function avatarHtml(c) {
-  if (c.avatar_url) {
-    return `<div class="card-avatar" style="background-image:url('${escapeAttr(c.avatar_url)}')"></div>`;
-  }
-  const initial = (c.name || c.slug || "?").trim().charAt(0).toUpperCase();
-  return `<div class="card-avatar">${escapeHtml(initial)}</div>`;
-}
-
-function showState(message) {
-  document.getElementById("grid").innerHTML = "";
-  const stateEl = document.getElementById("state");
-  stateEl.textContent = message;
-  stateEl.style.display = "block";
-}
-
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-}
-function escapeAttr(str) { return escapeHtml(str); }
 </script>
 </body>
 </html>
