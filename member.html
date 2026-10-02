@@ -197,7 +197,10 @@ async function loadMember(collection) {
 
   try {
     const res = await fetch(`${API_BASE}/api/characters?collection=${encodeURIComponent(collection)}`, { credentials: "include" });
-    if (!res.ok) return showState("Couldn't load this gallery right now.");
+    if (!res.ok) {
+      let why = ""; try { why = (await res.json()).error || ""; } catch {}
+      return showState(`Couldn't load this gallery (error ${res.status}${why ? ": " + why : ""}).`);
+    }
     const characters = await res.json();
     allCharacters = characters;
     renderHeader(collection, characters.length);
