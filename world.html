@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root{
+    --bg-deep:#0b1120;
+    --bg-panel:rgba(255,255,255,0.04);
+    --border:rgba(255,255,255,0.09);
+    --border-strong:rgba(255,255,255,0.18);
+    --text:#e7ecf5;
+    --text-dim:#8b94a8;
+    --accent:#7f9cf5;
+    --radius:14px;
+    font-family:-apple-system,"Segoe UI",Inter,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(127,156,245,0.10), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(127,156,245,0.06), transparent 45%),
+      var(--bg-deep);
+    color:var(--text);
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 64px}
+
+  .back-link{font-size:13px;color:var(--text-dim);display:inline-block;margin-bottom:20px}
+
+  .glass{
+    background:var(--bg-panel);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+  }
+
+  #header-card{padding:24px 28px;margin-bottom:20px}
+  #char-name{font-size:24px;font-weight:600;margin:0 0 14px}
+
+  .credits{display:flex;flex-wrap:wrap;gap:10px 22px}
+  .credit-item{font-size:13px;color:var(--text-dim)}
+  .credit-item strong{color:var(--text);font-weight:500}
+
+  .tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .tag-pill{
+    font-size:11px;padding:3px 10px;border-radius:999px;
+    border:1px solid var(--border);color:var(--text-dim);
+  }
+
+  #profile-card{padding:0;overflow:hidden}
+  #profile-body{padding:28px}
+
+  #gallery-section{padding:24px 28px;margin-top:20px}
+  #gallery-section h2{font-size:14px;font-weight:600;margin:0 0 14px}
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:10px}
+  .gallery-thumb{
+    aspect-ratio:1;border-radius:10px;overflow:hidden;
+    border:1px solid var(--border);cursor:pointer;padding:0;background:none;
+  }
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .gallery-thumb:hover{border-color:var(--border-strong)}
+
+  .lightbox-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,0.8);
+    display:flex;align-items:center;justify-content:center;padding:32px;z-index:1000;
+  }
+  .lightbox-content{max-width:min(720px, 90vw);max-height:85vh;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .lightbox-content img{max-width:100%;max-height:70vh;border-radius:10px;display:block}
+  .lightbox-credit{font-size:13px;color:var(--text-dim);text-align:center}
+  .lightbox-credit div{margin-bottom:2px}
+  .lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+
+  /* Fallback baseline styling for profile_html — a saved profile's own CSS
+     (raw, unscoped profile_css) is injected after this and takes precedence,
+     including for body/html and the page chrome below if the author targets it. */
+  .char-slot{line-height:1.6;font-size:15px}
+  .char-slot img{max-width:100%;border-radius:8px}
+  .char-slot h1,.char-slot h2,.char-slot h3{font-weight:600}
+
+  .state{
+    text-align:center;
+    padding:64px 24px;
+    color:var(--text-dim);
+    font-size:14px;
+  }
+  .state .big{font-size:16px;color:var(--text);margin-bottom:6px}
+
+  .skeleton{
+    height:18px;border-radius:6px;
+    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    background-size:200% 100%;
+    animation:shimmer 1.4s infinite;
+    margin-bottom:10px;
+  }
+  @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .topbar a{font-size:13px}
+  .edit-link{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    color:var(--text-dim) !important;
+    text-decoration:none !important;
+  }
+  .edit-link:hover{border-color:var(--border-strong);color:var(--text) !important}
+  #edit-link-wrap{display:none}
+  .world-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+  .world-tabs button{padding:8px 16px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer}
+  .world-tabs button.active{background:#4c5f9c;border-color:#4c5f9c;color:#fff}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <a class="back-link" id="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
+    <span id="edit-link-wrap"><a class="edit-link" id="edit-link" href="#">Edit this character</a></span>
+  </div>
+
+  <div id="header-card" class="glass">
+    <div id="header-loading">
+      <div class="skeleton" style="width:220px;height:26px;margin-bottom:16px"></div>
+      <div class="skeleton" style="width:340px"></div>
+    </div>
+    <div id="header-content" style="display:none">
+      <h1 id="char-name"></h1>
+      <div class="credits" id="credits-row"></div>
+      <div class="tags-row" id="tags-row"></div>
+    </div>
+  </div>
+
+  <div id="profile-card" class="glass">
+    <div id="profile-state" class="state" style="display:none"></div>
+    <div id="profile-body" style="display:none"></div>
+  </div>
+
+  <div id="gallery-section" class="glass" style="display:none">
+    <h2>Gallery</h2>
+    <div class="gallery-grid" id="gallery-grid"></div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightbox" style="display:none">
+  <button class="lightbox-close" id="lightbox-close" aria-label="Close">&times;</button>
+  <div class="lightbox-content">
+    <img id="lightbox-img" src="" alt="">
+    <div class="lightbox-credit" id="lightbox-credit"></div>
+  </div>
+</div>
+
+<script src="site.js"></script>
+<script>
+const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
+const authHeaders = () => {
+  const t = localStorage.getItem("brewery_token");
+  return t ? { Authorization: `Bearer ${t}` } : {};
+};
+
+const params = new URLSearchParams(window.location.search);
+const slug = params.get("slug");
+
+if (!slug) {
+  showState("No character specified.");
+} else {
+  loadProfile(slug);
+}
+
+async function loadProfile(slug) {
+  try {
+    const res = await fetch(`${API_BASE}/api/characters/${encodeURIComponent(slug)}`, { headers: authHeaders() });
+    if (res.status === 404) return showState("This character doesn't exist or isn't public yet.");
+    if (!res.ok) return showState("Couldn't load this profile right now.");
+
+    const c = await res.json();
+    const sec = sectionOf(c.collection);
+    if (!(sec && sec.worlds)) return location.replace(`profile.html?slug=${encodeURIComponent(c.slug)}`);
+    if (sec) {
+      const b = document.getElementById("back-link");
+      b.href = `member.html?collection=${encodeURIComponent(sec.collection)}`;
+      b.innerHTML = `&larr; Back to ${escapeHtml(sec.label)}`;
+    }
+    renderHeader(c);
+    renderProfile(c);
+    loadGallery(slug);
+    showEditLinkIfAuthed(c.slug);
+  } catch {
+    showState("Couldn't load this profile right now.");
+  }
+}
+
+async function showEditLinkIfAuthed(slug) {
+  let ok = localStorage.getItem("brewery_editor") === "1";
+  try {
+    const res = await fetch(`${API_BASE}/api/session`, { credentials: "include", headers: authHeaders() });
+    if (res.ok) { ok = true; localStorage.setItem("brewery_editor", "1"); }
+  } catch {}
+  if (!ok) return;
+  document.getElementById("edit-link").href = `editor.html?slug=${encodeURIComponent(slug)}`;
+  document.getElementById("edit-link-wrap").style.display = "inline-block";
+}
+
+async function loadGallery(slug) {
+  try {
+    const res = await fetch(`${API_BASE}/api/gallery/${encodeURIComponent(slug)}`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const items = await res.json();
+    if (!items.length) return;
+
+    const section = document.getElementById("gallery-section");
+    const grid = document.getElementById("gallery-grid");
+    grid.innerHTML = items.map((img, i) => `
+      <button type="button" class="gallery-thumb" data-index="${i}">
+        <img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy">
+      </button>
+    `).join("");
+    grid.querySelectorAll(".gallery-thumb").forEach((btn) => {
+      btn.addEventListener("click", () => openLightbox(items[Number(btn.dataset.index)]));
+    });
+    section.style.display = "block";
+  } catch {
+    // Gallery is a bonus section — fail quietly if it doesn't load.
+  }
+}
+
+function openLightbox(image) {
+  document.getElementById("lightbox-img").src = image.url;
+  document.getElementById("lightbox-img").alt = image.name;
+  const creditEl = document.getElementById("lightbox-credit");
+  const credits = image.credits || [];
+  if (credits.length > 0) {
+    creditEl.innerHTML = credits.map((c) => {
+      const label = c.role ? `${escapeHtml(c.role)}: ` : "";
+      const nameHtml = c.url
+        ? `<a href="${escapeAttr(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.name)}</a>`
+        : escapeHtml(c.name);
+      return `<div>${label}${nameHtml}</div>`;
+    }).join("");
+    creditEl.style.display = "block";
+  } else {
+    creditEl.style.display = "none";
+  }
+  document.getElementById("lightbox").style.display = "flex";
+}
+function closeLightbox() {
+  document.getElementById("lightbox").style.display = "none";
+}
+document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+document.getElementById("lightbox").addEventListener("click", (e) => {
+  if (e.target.id === "lightbox") closeLightbox();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.getElementById("lightbox").style.display !== "none") closeLightbox();
+});
+
+function renderHeader(c) {
+  document.title = c.name ? `${c.name} — world` : "Character profile";
+  document.getElementById("char-name").textContent = c.name || c.slug;
+
+  const credits = [];
+  if (c.artist) credits.push(creditItem("Art", c.artist, c.artist_url));
+  if (c.designer) credits.push(creditItem("Design", c.designer, c.designer_url));
+  document.getElementById("credits-row").innerHTML = credits.join("");
+
+  const tags = c.tags || [];
+  document.getElementById("tags-row").innerHTML = tags.map((t) => `<span class="tag-pill">${escapeHtml(t)}</span>`).join("");
+
+  document.getElementById("header-loading").style.display = "none";
+  document.getElementById("header-content").style.display = "block";
+}
+
+function creditItem(label, name, url) {
+  const value = url ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(name)}</a>` : escapeHtml(name);
+  return `<span class="credit-item">${label}: <strong>${value}</strong></span>`;
+}
+
+function renderProfile(c) {
+  const p = parseProfile(c.profile_html);
+  const order = SITE.worldTabs.map((d) => d.id);
+  let tabs = p.tabs.map((t) => {
+    const d = SITE.worldTabs.find((x) => x.id === t.id);
+    return { id: t.id, label: t.title || (d && d.label) || t.id, html: t.html };
+  }).filter((t) => t.html).sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  if (!tabs.length && p.body) tabs = [{ id: "overview", label: "Overview", html: p.body }];
+  const body = document.getElementById("profile-body");
+  const style = document.createElement("style");
+  style.textContent = c.profile_css || "";
+  const bar = document.createElement("div");
+  bar.className = "world-tabs";
+  const slot = document.createElement("div");
+  slot.className = `char-slot char-${c.slug}`;
+  const show = (t) => {
+    slot.innerHTML = t ? t.html : "<p>This world doesn't have an info page yet.</p>";
+    bar.querySelectorAll("button").forEach((b) => b.classList.toggle("active", !!t && b.dataset.id === t.id));
+  };
+  bar.innerHTML = tabs.map((t) => `<button type="button" data-id="${escapeAttr(t.id)}">${escapeHtml(t.label)}</button>`).join("");
+  bar.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => show(tabs[i])));
+  body.innerHTML = "";
+  body.append(style);
+  if (tabs.length > 1) body.append(bar);
+  body.append(slot);
+  show(tabs[0]);
+  body.style.display = "block";
+}
+
+function showState(message) {
+  document.getElementById("header-loading").style.display = "none";
+  const stateEl = document.getElementById("profile-state");
+  stateEl.innerHTML = `<div class="big">${escapeHtml(message)}</div><a href="index.html">Back to hub</a>`;
+  stateEl.style.display = "block";
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function escapeAttr(str) { return escapeHtml(str); }
+</script>
+</body>
+</html>
