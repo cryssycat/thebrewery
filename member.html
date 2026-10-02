@@ -155,6 +155,7 @@ const collection = params.get("collection");
 let isAuthed = false;
 let allCharacters = [];
 
+renderNav(collection);
 checkAuth().then((authed) => {
   isAuthed = authed;
   if (collection) loadMember(collection);
