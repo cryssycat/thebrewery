@@ -298,6 +298,7 @@
       <button class="btn ghost" id="logout-btn">Log out</button>
     </div>
   </header>
+  <div id="site-nav" style="max-width:1400px;margin:0 auto;padding:16px 24px 0"></div>
 
   <main>
     <!-- Left: fields -->
@@ -456,6 +457,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 });
 
 async function enterEditor() {
+  renderNav(null);
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("editor-screen").style.display = "block";
   initEditors();
