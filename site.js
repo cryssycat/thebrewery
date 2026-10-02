@@ -2,8 +2,8 @@
 const SITE = {
   // collection = the value stored on each character. Change if yours differ.
   sections: [
-    { collection: "Star Characters", label: "Star's Characters" },
-    { collection: "Luna Characters", label: "Luna's Characters" },
+    { collection: "Star Characters", label: "Star's Characters", folders: true },
+    { collection: "Luna Characters", label: "Luna's Characters", folders: true },
     { collection: "Couples", label: "Co-Owned Characters", coOwned: true },
     { collection: "Worlds", label: "Worlds", worlds: true },
     { collection: "Mascots", label: "Mascots" },
@@ -19,6 +19,9 @@ const SITE = {
     { id: "custom3", label: "Custom 3", custom: true },
   ],
 };
+// A character's folder is stored as a hidden tag "folder:Name" (the list API already returns tags).
+const visibleTags = (c) => (c.tags || []).filter((t) => !String(t).startsWith("folder:"));
+const folderOf = (c) => { const t = (c.tags || []).find((x) => String(x).startsWith("folder:")); return t ? String(t).slice(7).trim() : ""; };
 const sectionOf = (collection) => SITE.sections.find((s) => s.collection === collection);
 
 // Extra data lives inside profile_html as comments, so the worker needs no changes:
@@ -46,10 +49,11 @@ function buildProfile(meta, tabs, body) {
 function renderNav(active) {
   const el = document.getElementById("site-nav");
   if (!el) return;
+  document.body.prepend(el); // outside .wrap so a profile's own CSS can't push it around
   if (!document.getElementById("nav-style")) {
   const st = document.createElement("style");
   st.id = "nav-style";
-  st.textContent = "#site-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}#site-nav a{padding:9px 18px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);font-size:13px;font-weight:500}#site-nav a:hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}#site-nav a.active{background:var(--accent-dim,#4c5f9c);border-color:var(--accent-dim,#4c5f9c);color:#fff}";
+  st.textContent = "#site-nav{position:sticky!important;top:0;z-index:100;display:flex!important;visibility:visible!important;width:100%!important;box-sizing:border-box;gap:8px;flex-wrap:wrap;justify-content:center;padding:12px 20px;margin:0!important;background:rgba(11,17,32,.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.09)}#site-nav a{display:inline-block!important;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:#8b94a8!important;font:500 13px -apple-system,'Segoe UI',Inter,sans-serif;text-decoration:none!important;background:transparent}#site-nav a:hover{border-color:rgba(255,255,255,.3);color:#e7ecf5!important}#site-nav a.active{background:#4c5f9c;border-color:#4c5f9c;color:#fff!important}";
   document.head.appendChild(st);
   }
   const link = (href, label, on) => `<a href="${href}"${on ? ' class="active"' : ""}>${label}</a>`;
