@@ -120,14 +120,15 @@
     background:var(--bg-panel);
   }
   .card-edit:hover{border-color:var(--border-strong);color:var(--text)}
+  .grid.worlds{grid-template-columns:1fr}
+  .worlds .card-avatar{aspect-ratio:4/1;font-size:48px}
+  .worlds .card-name{font-size:18px}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <div class="topbar">
-    <a class="back-link" href="index.html" style="margin:0">&larr; Back to hub</a>
-  </div>
+  <div id="site-nav"></div>
 
   <div id="header">
     <div class="skeleton" style="width:220px;height:28px;border-radius:6px;margin-bottom:10px"></div>
@@ -140,6 +141,7 @@
   <div class="grid" id="grid"></div>
 </div>
 
+<script src="site.js"></script>
 <script>
 const API_BASE = "https://thebrewery.crysthigpen.workers.dev";
 const authHeaders = () => {
@@ -156,32 +158,9 @@ let allCharacters = [];
 checkAuth().then((authed) => {
   isAuthed = authed;
   if (collection) loadMember(collection);
-  else showMemberPicker();
+  else location.replace("index.html");
 });
 
-// Opened without ?collection=... : jump straight in if there's one member, otherwise offer a picker.
-async function showMemberPicker() {
-  document.getElementById("search-input").style.display = "none";
-  document.getElementById("header").innerHTML =
-    '<h1 id="member-title">Members</h1><p id="member-count">Pick a member to browse their characters.</p>';
-  try {
-    const res = await fetch(`${API_BASE}/api/members`);
-    if (!res.ok) throw new Error();
-    const members = await res.json();
-    if (!members.length) return showState("No members set up yet.");
-    if (members.length === 1) {
-      location.replace(`member.html?collection=${encodeURIComponent(members[0].collection)}`);
-      return;
-    }
-    document.getElementById("grid").innerHTML = members.map((m) => `
-      <div class="glass card">
-        <a class="card-link" href="member.html?collection=${encodeURIComponent(m.collection)}" aria-label="View ${escapeAttr(m.collection)}"></a>
-        <p class="card-name">${escapeHtml(m.collection)}</p>
-      </div>`).join("");
-  } catch {
-    showState("Couldn't load members right now.");
-  }
-}
 
 document.getElementById("search-input").addEventListener("input", (e) => {
   applySearch(e.target.value);
@@ -229,10 +208,11 @@ async function loadMember(collection) {
 }
 
 function renderHeader(collection, count) {
-  document.title = `${collection} — character gallery`;
+  const s = sectionOf(collection), label = s ? s.label : collection, noun = s && s.worlds ? "world" : "character";
+  document.title = `${label} — gallery`;
   document.getElementById("header").innerHTML = `
-    <h1 id="member-title">${escapeHtml(collection)}</h1>
-    <p id="member-count">${count} public ${count === 1 ? "character" : "characters"}${isAuthed ? ` &middot; <a href="editor.html?new=1&collection=${encodeURIComponent(collection)}">+ New character</a>` : ""}</p>
+    <h1 id="member-title">${escapeHtml(label)}</h1>
+    <p id="member-count">${count} public ${noun}${count === 1 ? "" : "s"}${isAuthed ? ` &middot; <a href="editor.html?new=1&collection=${encodeURIComponent(collection)}">+ New ${noun}</a>` : ""}</p>
   `;
 }
 
@@ -243,9 +223,11 @@ function renderGrid(characters, isSearchResult) {
     return showState(isSearchResult ? "No characters match that search." : "No public characters here yet.");
   }
   document.getElementById("state").style.display = "none";
+  const worlds = (sectionOf(collection) || {}).worlds;
+  grid.className = worlds ? "grid worlds" : "grid";
   grid.innerHTML = characters.map((c) => `
     <div class="glass card">
-      <a class="card-link" href="profile.html?slug=${encodeURIComponent(c.slug)}" aria-label="View ${escapeAttr(c.name || c.slug)}"></a>
+      <a class="card-link" href="${worlds ? "world" : "profile"}.html?slug=${encodeURIComponent(c.slug)}" aria-label="View ${escapeAttr(c.name || c.slug)}"></a>
       ${isAuthed ? `<a class="card-edit" href="editor.html?slug=${encodeURIComponent(c.slug)}">Edit</a>` : ""}
       ${avatarHtml(c)}
       <p class="card-name">${escapeHtml(c.name || c.slug)}</p>
