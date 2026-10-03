@@ -2,8 +2,8 @@
 const SITE = {
   // collection = the value stored on each character. Change if yours differ.
   sections: [
-    { collection: "Star's Characters", label: "Star's Characters", folders: true },
-    { collection: "Luna's Characters", label: "Luna's Characters", folders: true },
+    { collection: "Star Characters", label: "Star's Characters", folders: true },
+    { collection: "Luna Characters", label: "Luna's Characters", folders: true },
     { collection: "Couples", label: "Co-Owned Characters", coOwned: true },
     { collection: "Worlds", label: "Worlds", worlds: true },
     { collection: "Mascots", label: "Mascots" },
