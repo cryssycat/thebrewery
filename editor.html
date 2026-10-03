@@ -360,6 +360,9 @@
       <div class="upload-zone" id="upload-zone">Drop images here, click to browse,<br>or paste from your clipboard</div>
       <input type="file" id="upload-input" accept="image/*" multiple style="display:none">
       <div id="upload-error" style="font-size:12px;margin-top:8px;color:var(--danger);display:none">Upload failed.</div>
+      <details style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;color:var(--text-dim)">Gallery section titles</summary>
+        <p style="font-size:12px;color:var(--text-dim);margin:8px 0">Open an image to pick its section (References, Art, or a custom one). Sections save with the character.</p>
+        <div class="field" id="gal-titles"></div></details>
       <div class="gallery-grid" id="upload-gallery"></div>
     </section>
   </main>
@@ -376,6 +379,7 @@
     <img id="lightbox-img" src="" alt="">
     <div style="width:100%;max-width:540px;display:flex;flex-direction:column;gap:10px;max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;flex-shrink:0" id="lightbox-credits-list"></div>
     <button class="btn ghost" id="lightbox-add-credit" style="align-self:flex-start;font-size:13px;flex-shrink:0">+ Add credit</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;font-size:13px;color:var(--text-dim)">Gallery section <select id="lightbox-section" style="flex:1"></select></div>
     <div class="lightbox-actions" style="flex-shrink:0">
       <button class="btn danger" id="lightbox-delete">Delete</button>
       <button class="btn" id="lightbox-copy">Copy URL</button>
@@ -513,6 +517,19 @@ ownerBox.querySelectorAll("input").forEach((i) => i.addEventListener("input", ma
 const getOwners = () => [...ownerBox.querySelectorAll("input")].map((i) => i.value.trim()).filter(Boolean);
 const setOwners = (list) => ownerBox.querySelectorAll("input").forEach((i, n) => { i.value = list[n] || ""; });
 
+let galMeta = { sec: {}, titles: {} };   // image id -> section id, plus custom section titles
+const galTitleBox = document.getElementById("gal-titles");
+galTitleBox.innerHTML = SITE.gallerySections.filter((d) => d.custom).map((d) =>
+  `<input data-g="${d.id}" placeholder="${d.label} title (optional)" style="margin-bottom:6px">`).join("");
+galTitleBox.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => { galMeta.titles[i.dataset.g] = i.value.trim(); markDirty(); }));
+const setGalTitles = () => galTitleBox.querySelectorAll("input").forEach((i) => { i.value = galMeta.titles[i.dataset.g] || ""; });
+const galLabel = (d) => (d.custom && galMeta.titles[d.id]) || d.label;
+document.getElementById("lightbox-section").addEventListener("change", (e) => {
+  if (!lightboxImage) return;
+  if (e.target.value) galMeta.sec[lightboxImage.id] = e.target.value; else delete galMeta.sec[lightboxImage.id];
+  markDirty();
+});
+
 function saveTags() {
   const f = document.getElementById("f-folder").value.trim().replace(/\s+/g, " ");
   return sec().folders && f ? [...currentTags, "folder:" + f] : [...currentTags];
@@ -593,6 +610,8 @@ function applyMode() {
 function buildHtml() {
   flushTab();
   const s = sec(), meta = { ...loadedMeta };
+  const gt = Object.fromEntries(Object.entries(galMeta.titles).filter(([, v]) => v));
+  if (Object.keys(galMeta.sec).length || Object.keys(gt).length) meta.gal = { sec: galMeta.sec, titles: gt }; else delete meta.gal;
   if (s.coOwned) { const o = getOwners(); if (o.length) meta.owners = o; else delete meta.owners; }
   if (s.worlds) return buildProfile(meta, SITE.worldTabs.map((d) => {
     const t = worldTabs[d.id] || {};
@@ -682,6 +701,8 @@ async function loadCharacter(slug) {
   p.tabs.forEach((t) => { worldTabs[t.id] = { title: t.title, html: t.html }; });
   if (sec().worlds && !p.tabs.length && p.body) worldTabs.overview = { html: p.body };
   loadedMeta = p.meta;
+  galMeta = { sec: (p.meta.gal && p.meta.gal.sec) || {}, titles: (p.meta.gal && p.meta.gal.titles) || {} };
+  setGalTitles();
   setOwners(p.meta.owners || []);
   activeTab = sec().worlds ? (SITE.worldTabs.find((d) => worldTabs[d.id] && worldTabs[d.id].html) || SITE.worldTabs[0]).id : "main";
   cmHtml.setValue(sec().worlds ? (worldTabs[activeTab] || {}).html || "" : p.body);
@@ -701,6 +722,7 @@ function resetForm() {
   currentTags = [];
   renderTagPills();
   worldTabs = {}; loadedMeta = {}; activeTab = "main"; setOwners([]); document.getElementById("f-folder").value = "";
+  galMeta = { sec: {}, titles: {} }; setGalTitles();
   cmHtml.setValue("");
   cmCss.setValue("");
   applyMode();
@@ -912,6 +934,9 @@ function openLightbox(image) {
   lightboxCredits = (image.credits || []).map((c) => ({ ...c })); // clone so cancel-by-closing doesn't mutate
   document.getElementById("lightbox-img").src = image.url;
   document.getElementById("lightbox-img").alt = image.name;
+  const gsel = document.getElementById("lightbox-section");
+  gsel.innerHTML = `<option value="">Gallery (no section)</option>` + SITE.gallerySections.map((d) => `<option value="${d.id}">${escapeHtml(galLabel(d))}</option>`).join("");
+  gsel.value = galMeta.sec[image.id] || "";
   if (lightboxCredits.length === 0) lightboxCredits.push({ role: "", name: "", url: "" });
   renderCreditRows();
   document.getElementById("lightbox").style.display = "flex";

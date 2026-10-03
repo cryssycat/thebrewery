@@ -121,6 +121,9 @@
   }
   .edit-link:hover{border-color:var(--border-strong);color:var(--text) !important}
   #edit-link-wrap{display:none}
+  .gal-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .gal-tabs button{padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer}
+  .gal-tabs button.active{background:#4c5f9c;border-color:#4c5f9c;color:#fff}
 </style>
 </head>
 <body>
@@ -151,6 +154,7 @@
 
   <div id="gallery-section" class="glass" style="display:none">
     <h2>Gallery</h2>
+    <div class="gal-tabs" id="gallery-tabs"></div>
     <div class="gallery-grid" id="gallery-grid"></div>
   </div>
 </div>
@@ -198,7 +202,7 @@ async function loadProfile(slug) {
     }
     renderHeader(c);
     renderProfile(c);
-    loadGallery(slug);
+    loadGallery(slug, parseProfile(c.profile_html).meta.gal);
     showEditLinkIfAuthed(c.slug);
   } catch {
     showState("Couldn't load this profile right now.");
@@ -216,24 +220,27 @@ async function showEditLinkIfAuthed(slug) {
   document.getElementById("edit-link-wrap").style.display = "inline-block";
 }
 
-async function loadGallery(slug) {
+async function loadGallery(slug, gal) {
   try {
     const res = await fetch(`${API_BASE}/api/gallery/${encodeURIComponent(slug)}`, { headers: authHeaders() });
     if (!res.ok) return;
     const items = await res.json();
     if (!items.length) return;
-
-    const section = document.getElementById("gallery-section");
-    const grid = document.getElementById("gallery-grid");
-    grid.innerHTML = items.map((img, i) => `
-      <button type="button" class="gallery-thumb" data-index="${i}">
-        <img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy">
-      </button>
-    `).join("");
-    grid.querySelectorAll(".gallery-thumb").forEach((btn) => {
-      btn.addEventListener("click", () => openLightbox(items[Number(btn.dataset.index)]));
-    });
-    section.style.display = "block";
+    const secMap = (gal && gal.sec) || {}, titles = (gal && gal.titles) || {};
+    const groups = [{ id: "", label: "Gallery", items: [] }, ...SITE.gallerySections.map((d) => ({ id: d.id, label: (d.custom && titles[d.id]) || d.label, items: [] }))];
+    items.forEach((img) => (groups.find((g) => g.id && g.id === secMap[img.id]) || groups[0]).items.push(img));
+    const tabs = groups.filter((g) => g.items.length);
+    const bar = document.getElementById("gallery-tabs"), grid = document.getElementById("gallery-grid");
+    const show = (g) => {
+      grid.innerHTML = g.items.map((img) => `<button type="button" class="gallery-thumb"><img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy"></button>`).join("");
+      grid.querySelectorAll(".gallery-thumb").forEach((btn, i) => btn.addEventListener("click", () => openLightbox(g.items[i])));
+      bar.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.id === g.id));
+    };
+    bar.innerHTML = tabs.length > 1 ? tabs.map((g) => `<button type="button" data-id="${escapeAttr(g.id)}">${escapeHtml(g.label)}</button>`).join("") : "";
+    bar.querySelectorAll("button").forEach((b, i) => b.addEventListener("click", () => show(tabs[i])));
+    document.querySelector("#gallery-section h2").textContent = tabs.length === 1 ? tabs[0].label : "Gallery";
+    show(tabs[0]);
+    document.getElementById("gallery-section").style.display = "block";
   } catch {
     // Gallery is a bonus section — fail quietly if it doesn't load.
   }
