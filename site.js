@@ -2,8 +2,8 @@
 const SITE = {
   // collection = the value stored on each character. Change if yours differ.
   sections: [
-    { collection: "Star Characters", label: "Star's Characters", folders: true },
-    { collection: "Luna Characters", label: "Luna's Characters", folders: true },
+    { collection: "Star's Characters", label: "Star's Characters", folders: true },
+    { collection: "Luna's Characters", label: "Luna's Characters", folders: true },
     { collection: "Couples", label: "Co-Owned Characters", coOwned: true },
     { collection: "Worlds", label: "Worlds", worlds: true },
     { collection: "Mascots", label: "Mascots" },
@@ -15,7 +15,9 @@ const SITE = {
     { id: "g1", label: "Custom 1", custom: true }, { id: "g2", label: "Custom 2", custom: true },
     { id: "g3", label: "Custom 3", custom: true }, { id: "g4", label: "Custom 4", custom: true },
     { id: "g5", label: "Custom 5", custom: true },
+    { id: "nsfw", label: "NSFW", nsfw: true },   // blurred until clicked; hidden when empty
   ],
+  valueLabel: "Total art value", valueCurrency: "$",
   worldTabs: [
     { id: "overview", label: "Overview" }, { id: "culture", label: "Culture" },
     { id: "magic", label: "Magic System" }, { id: "economy", label: "Economy" },

@@ -265,6 +265,8 @@
   .code-tabs button{flex:1 0 auto;padding:8px 10px}
   .code-tabs button.has::after{content:" \2022"}
   select{color-scheme:dark}
+  .gallery-thumb.nsfw img{filter:blur(14px)}
+  .gallery-thumb.nsfw:hover img{filter:none}
   select optgroup{background:#131c2e;color:#8b94a8}
   select option{background:#131c2e;color:#e7ecf5}
 </style>
@@ -380,6 +382,7 @@
     <div style="width:100%;max-width:540px;display:flex;flex-direction:column;gap:10px;max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:10px;flex-shrink:0" id="lightbox-credits-list"></div>
     <button class="btn ghost" id="lightbox-add-credit" style="align-self:flex-start;font-size:13px;flex-shrink:0">+ Add credit</button>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;font-size:13px;color:var(--text-dim)">Gallery section <select id="lightbox-section" style="flex:1"></select></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;font-size:13px;color:var(--text-dim)">Value (hidden, adds to page total) <input id="lightbox-value" type="number" min="0" step="any" placeholder="0" style="flex:1"></div>
     <div class="lightbox-actions" style="flex-shrink:0">
       <button class="btn danger" id="lightbox-delete">Delete</button>
       <button class="btn" id="lightbox-copy">Copy URL</button>
@@ -517,7 +520,7 @@ ownerBox.querySelectorAll("input").forEach((i) => i.addEventListener("input", ma
 const getOwners = () => [...ownerBox.querySelectorAll("input")].map((i) => i.value.trim()).filter(Boolean);
 const setOwners = (list) => ownerBox.querySelectorAll("input").forEach((i, n) => { i.value = list[n] || ""; });
 
-let galMeta = { sec: {}, titles: {} };   // image id -> section id, plus custom section titles
+let galMeta = { sec: {}, titles: {}, val: {} };   // image id -> section id, plus custom section titles
 const galTitleBox = document.getElementById("gal-titles");
 galTitleBox.innerHTML = SITE.gallerySections.filter((d) => d.custom).map((d) =>
   `<input data-g="${d.id}" placeholder="${d.label} title (optional)" style="margin-bottom:6px">`).join("");
@@ -527,6 +530,13 @@ const galLabel = (d) => (d.custom && galMeta.titles[d.id]) || d.label;
 document.getElementById("lightbox-section").addEventListener("change", (e) => {
   if (!lightboxImage) return;
   if (e.target.value) galMeta.sec[lightboxImage.id] = e.target.value; else delete galMeta.sec[lightboxImage.id];
+  markDirty();
+  renderGallery();
+});
+document.getElementById("lightbox-value").addEventListener("input", (e) => {
+  if (!lightboxImage) return;
+  const v = parseFloat(e.target.value);
+  if (v > 0) galMeta.val[lightboxImage.id] = v; else delete galMeta.val[lightboxImage.id];
   markDirty();
 });
 
@@ -611,7 +621,8 @@ function buildHtml() {
   flushTab();
   const s = sec(), meta = { ...loadedMeta };
   const gt = Object.fromEntries(Object.entries(galMeta.titles).filter(([, v]) => v));
-  if (Object.keys(galMeta.sec).length || Object.keys(gt).length) meta.gal = { sec: galMeta.sec, titles: gt }; else delete meta.gal;
+  const gv = Object.fromEntries(Object.entries(galMeta.val).filter(([, v]) => v > 0));
+  if (Object.keys(galMeta.sec).length || Object.keys(gt).length || Object.keys(gv).length) meta.gal = { sec: galMeta.sec, titles: gt, val: gv }; else delete meta.gal;
   if (s.coOwned) { const o = getOwners(); if (o.length) meta.owners = o; else delete meta.owners; }
   if (s.worlds) return buildProfile(meta, SITE.worldTabs.map((d) => {
     const t = worldTabs[d.id] || {};
@@ -701,7 +712,7 @@ async function loadCharacter(slug) {
   p.tabs.forEach((t) => { worldTabs[t.id] = { title: t.title, html: t.html }; });
   if (sec().worlds && !p.tabs.length && p.body) worldTabs.overview = { html: p.body };
   loadedMeta = p.meta;
-  galMeta = { sec: (p.meta.gal && p.meta.gal.sec) || {}, titles: (p.meta.gal && p.meta.gal.titles) || {} };
+  galMeta = { sec: (p.meta.gal && p.meta.gal.sec) || {}, titles: (p.meta.gal && p.meta.gal.titles) || {}, val: (p.meta.gal && p.meta.gal.val) || {} };
   setGalTitles();
   setOwners(p.meta.owners || []);
   activeTab = sec().worlds ? (SITE.worldTabs.find((d) => worldTabs[d.id] && worldTabs[d.id].html) || SITE.worldTabs[0]).id : "main";
@@ -722,7 +733,7 @@ function resetForm() {
   currentTags = [];
   renderTagPills();
   worldTabs = {}; loadedMeta = {}; activeTab = "main"; setOwners([]); document.getElementById("f-folder").value = "";
-  galMeta = { sec: {}, titles: {} }; setGalTitles();
+  galMeta = { sec: {}, titles: {}, val: {} }; setGalTitles();
   cmHtml.setValue("");
   cmCss.setValue("");
   applyMode();
@@ -907,7 +918,7 @@ function renderGallery() {
       ${p.error ? "&#10005; " + escapeAttr(p.error) : "Uploading&hellip;"}
     </button>`).join("");
   gallery.innerHTML = pend + galleryItems.map((img, i) => `
-    <button type="button" class="gallery-thumb" data-index="${i}">
+    <button type="button" class="gallery-thumb${galMeta.sec[img.id] === "nsfw" ? " nsfw" : ""}" data-index="${i}">
       <img src="${img.url}" alt="${escapeAttr(img.name)}" loading="lazy">
     </button>
   `).join("");
@@ -937,6 +948,7 @@ function openLightbox(image) {
   const gsel = document.getElementById("lightbox-section");
   gsel.innerHTML = `<option value="">Gallery (no section)</option>` + SITE.gallerySections.map((d) => `<option value="${d.id}">${escapeHtml(galLabel(d))}</option>`).join("");
   gsel.value = galMeta.sec[image.id] || "";
+  document.getElementById("lightbox-value").value = galMeta.val[image.id] || "";
   if (lightboxCredits.length === 0) lightboxCredits.push({ role: "", name: "", url: "" });
   renderCreditRows();
   document.getElementById("lightbox").style.display = "flex";
