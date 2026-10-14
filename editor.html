@@ -314,7 +314,8 @@
       <div class="field"><label>Name</label><input id="f-name"></div>
       <div class="field"><label>Slug</label><input id="f-slug" placeholder="new-character-slug"></div>
       <div class="field"><label>Section</label><select id="f-collection"></select></div>
-      <div class="field" id="folder-field" style="display:none"><label>Folder (blank = Unsorted)</label><input id="f-folder" list="folder-suggestions" placeholder="e.g. Mains"><datalist id="folder-suggestions"></datalist><button type="button" class="btn ghost" id="rename-folder-btn" style="margin-top:6px;font-size:12px">Rename this folder&hellip;</button></div>
+      <div class="field" id="folder-field" style="display:none"><label>Folder (blank = Unsorted)</label><input id="f-folder" list="folder-suggestions" placeholder="e.g. Mains"><datalist id="folder-suggestions"></datalist><button type="button" class="btn ghost" id="rename-folder-btn" style="margin-top:6px;font-size:12px">Rename this folder&hellip;</button>
+        <label style="margin-top:12px">Sub-folder (optional, lives inside the folder above)</label><input id="f-sub" list="sub-suggestions" placeholder="e.g. Feral, OC, Fandom"><datalist id="sub-suggestions"></datalist></div>
       <div class="field" id="owners-field" style="display:none"><label>Co-owned by (up to 5, empty slots are hidden)</label><div id="owner-inputs"></div></div>
       <div class="field"><label>Avatar</label><input id="f-avatar-url" placeholder="Set via gallery, or paste a URL"></div>
 
@@ -501,7 +502,7 @@ async function loadTagSuggestions() {
   const res = await apiFetch(`${API_BASE}/api/tags`, { credentials: "include" });
   const tags = res.ok ? await res.json() : [];
   const datalist = document.getElementById("tag-suggestions");
-  datalist.innerHTML = tags.filter((t) => !String(t).startsWith("folder:")).map((t) => `<option value="${escapeAttr(t)}">`).join("");
+  datalist.innerHTML = tags.filter((t) => !String(t).startsWith("folder:") && !String(t).startsWith("sub:")).map((t) => `<option value="${escapeAttr(t)}">`).join("");
 }
 
 // ---------- Section modes: world tabs + co-owners ----------
@@ -542,9 +543,20 @@ document.getElementById("lightbox-value").addEventListener("input", (e) => {
 
 function saveTags() {
   const f = document.getElementById("f-folder").value.trim().replace(/\s+/g, " ");
-  return sec().folders && f ? [...currentTags, "folder:" + f] : [...currentTags];
+  const sb = document.getElementById("f-sub").value.trim().replace(/\s+/g, " ");
+  const out = [...currentTags];
+  if (sec().folders && f) out.push("folder:" + f);
+  if (sec().folders && sb) out.push("sub:" + sb);
+  return out;
 }
-document.getElementById("f-folder").addEventListener("input", markDirty);
+document.getElementById("f-folder").addEventListener("input", () => { markDirty(); updateSubSuggestions(); });
+document.getElementById("f-sub").addEventListener("input", markDirty);
+function updateSubSuggestions() {
+  const col = document.getElementById("f-collection").value;
+  const f = document.getElementById("f-folder").value.trim();
+  const subs = allChars.filter((c) => c.collection === col && folderOf(c) === f).map(subOf).filter(Boolean);
+  document.getElementById("sub-suggestions").innerHTML = [...new Set(subs)].sort().map((s) => `<option value="${escapeAttr(s)}">`).join("");
+}
 
 document.getElementById("rename-folder-btn").addEventListener("click", async () => {
   const old = document.getElementById("f-folder").value.trim();
@@ -613,6 +625,7 @@ function applyMode() {
   const col = document.getElementById("f-collection").value;
   document.getElementById("folder-suggestions").innerHTML = [...new Set(allChars.filter((c) => c.collection === col).map(folderOf).filter(Boolean))]
     .sort().map((f) => `<option value="${escapeAttr(f)}">`).join("");
+  updateSubSuggestions();
   document.getElementById("f-avatar-url").previousElementSibling.textContent = s.worlds ? "Banner image" : "Avatar";
   renderCodeTabs();
 }
@@ -704,8 +717,9 @@ async function loadCharacter(slug) {
   document.getElementById("f-designer").value = c.designer || "";
   document.getElementById("f-artist-url").value = c.artist_url || "";
   document.getElementById("f-designer-url").value = c.designer_url || "";
-  currentTags = (Array.isArray(c.tags) ? c.tags : []).filter((t) => !String(t).startsWith("folder:"));
+  currentTags = (Array.isArray(c.tags) ? c.tags : []).filter((t) => !String(t).startsWith("folder:") && !String(t).startsWith("sub:"));
   document.getElementById("f-folder").value = folderOf(c);
+  document.getElementById("f-sub").value = subOf(c);
   renderTagPills();
   const p = parseProfile(c.profile_html);
   worldTabs = {};
@@ -732,7 +746,7 @@ function resetForm() {
   document.getElementById("f-collection").selectedIndex = 0;
   currentTags = [];
   renderTagPills();
-  worldTabs = {}; loadedMeta = {}; activeTab = "main"; setOwners([]); document.getElementById("f-folder").value = "";
+  worldTabs = {}; loadedMeta = {}; activeTab = "main"; setOwners([]); document.getElementById("f-folder").value = ""; document.getElementById("f-sub").value = "";
   galMeta = { sec: {}, titles: {}, val: {} }; setGalTitles();
   cmHtml.setValue("");
   cmCss.setValue("");
