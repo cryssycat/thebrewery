@@ -28,8 +28,10 @@ const SITE = {
   ],
 };
 // A character's folder is stored as a hidden tag "folder:Name" (the list API already returns tags).
-const visibleTags = (c) => (c.tags || []).filter((t) => !String(t).startsWith("folder:"));
+const visibleTags = (c) => (c.tags || []).filter((t) => !String(t).startsWith("folder:") && !String(t).startsWith("sub:"));
 const folderOf = (c) => { const t = (c.tags || []).find((x) => String(x).startsWith("folder:")); return t ? String(t).slice(7).trim() : ""; };
+// A sub-folder is stored as a hidden tag "sub:Name" and lives inside the character's main folder.
+const subOf = (c) => { const t = (c.tags || []).find((x) => String(x).startsWith("sub:")); return t ? String(t).slice(4).trim() : ""; };
 const sectionOf = (collection) => SITE.sections.find((s) => s.collection === collection);
 
 // Extra data lives inside profile_html as comments, so the worker needs no changes:
