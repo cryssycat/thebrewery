@@ -12,6 +12,10 @@ const SITE = {
     footer: "images/IMG_2756.png",   // bottom of every page — 912 × 160 px
     divider: "images/IMG_2754.png",  // between blocks      — 912 × 44 px
   },
+  // Pages that should NOT show the section header banner (logo and footer still show). Remove "profile" to bring it back.
+  noBannerPages: ["profile"],
+  // Pages that should NOT show divider images (a little blank space is left instead).
+  noDividerPages: ["profile"],
   // Each section below also has a header banner: set  banner: "images/star.png"  (912 × 140 px).
   // collection = the value stored on each character. Change if yours differ.
   sections: [
@@ -117,10 +121,15 @@ function renderChrome(key) {
     f.id = "chrome-footer";
     stall.append(f);
   }
-  const s = key && key !== "home" ? sectionOf(key) : null;
+  const page = location.pathname.split("/").pop().replace(/\.html$/, "");
+  const s = key && key !== "home" && !(SITE.noBannerPages || []).includes(page) ? sectionOf(key) : null;
   document.getElementById("chrome-logo").innerHTML = siteSlot("logo", SITE.images.logo, "LOGO PLACEHOLDER", "912 × 300 px", "The Brewery");
   document.getElementById("chrome-banner").innerHTML = s
     ? siteSlot("banner", s.banner, `${s.label.toUpperCase()} HEADER BANNER`, "912 × 140 px", s.label) : "";
   document.getElementById("chrome-footer").innerHTML = siteSlot("footer", SITE.images.footer, "FOOTER BANNER PLACEHOLDER", "912 × 160 px", "");
-  wrap.querySelectorAll(".divider-host").forEach((h) => { h.innerHTML = dividerHtml(); });
+  const noDiv = (SITE.noDividerPages || []).includes(page);
+  wrap.querySelectorAll(".divider-host").forEach((h) => {
+    h.innerHTML = noDiv ? "" : dividerHtml();
+    h.style.height = noDiv ? "20px" : "";
+  });
 }
