@@ -81,7 +81,7 @@ function renderNav(active) {
   document.head.appendChild(st);
   }
   const link = (href, label, on) => `<a href="${href}"${on ? ' class="active"' : ""}>${label}</a>`;
-  el.innerHTML = link("index.html", "Home", active === "home") + SITE.sections.map((s) =>
+  el.innerHTML = (SITE.extraLinks || []).map((x) => `<a href="${x.href}">${x.label}</a>`).join("") + link("index.html", "Home", active === "home") + SITE.sections.map((s) =>
     link(`member.html?collection=${encodeURIComponent(s.collection)}`, s.label, active === s.collection)).join("");
 }
 
