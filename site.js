@@ -1,12 +1,21 @@
-// Shared config + helpers for every page. Edit the section list here.
+// Shared config + helpers for every page. Edit the section list and image paths here.
 const SITE = {
+  // ----- Images (paths relative to the page). Leave "" to show a placeholder box. -----
+  // Banner images are for the white box, which is 912 px wide inside its border (1824 px for sharp 2x).
+  images: {
+    background: "images/background.png",  // tiled behind everything; solid indigo if the file is missing
+    logo: "",     // top of every page   — 912 × 300 px
+    footer: "",   // bottom of every page — 912 × 160 px
+    divider: "",  // between blocks      — 912 × 44 px
+  },
+  // Each section below also has a header banner: set  banner: "images/star.png"  (912 × 140 px).
   // collection = the value stored on each character. Change if yours differ.
   sections: [
-    { collection: "Star Characters", label: "Star's Characters", folders: true },
-    { collection: "Luna Characters", label: "Luna's Characters", folders: true },
-    { collection: "Couples", label: "Co-Owned Characters", coOwned: true },
-    { collection: "Worlds", label: "Worlds", worlds: true },
-    { collection: "Mascots", label: "Mascots" },
+    { collection: "Star Characters", label: "Star's Characters", folders: true, banner: "" },
+    { collection: "Luna Characters", label: "Luna's Characters", folders: true, banner: "" },
+    { collection: "Couples", label: "Co-Owned Characters", coOwned: true, banner: "" },
+    { collection: "Worlds", label: "Worlds", worlds: true, banner: "" },
+    { collection: "Mascots", label: "Mascots", banner: "" },
   ],
   homeCollection: "Site", homeSlug: "home",
   maxOwners: 5,
@@ -63,10 +72,50 @@ function renderNav(active) {
   if (!document.getElementById("nav-style")) {
   const st = document.createElement("style");
   st.id = "nav-style";
-  st.textContent = "#site-nav{position:sticky!important;top:0;z-index:100;display:flex!important;visibility:visible!important;width:100%!important;box-sizing:border-box;gap:8px;flex-wrap:wrap;justify-content:center;padding:12px 20px;margin:0!important;background:rgba(11,17,32,.94);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.09)}#site-nav a{display:inline-block!important;padding:8px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:#8b94a8!important;font:500 13px -apple-system,'Segoe UI',Inter,sans-serif;text-decoration:none!important;background:transparent}#site-nav a:hover{border-color:rgba(255,255,255,.3);color:#e7ecf5!important}#site-nav a.active{background:#4c5f9c;border-color:#4c5f9c;color:#fff!important}";
+  st.textContent = "#site-nav{position:sticky!important;top:0;z-index:100;display:flex!important;visibility:visible!important;width:100%!important;box-sizing:border-box;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px 12px;margin:0!important;background:#4652a1;box-shadow:0 2px 10px rgba(0,0,0,.25)}#site-nav a{display:inline-block!important;padding:6px 18px;border-radius:999px;border:0;background:#7387d4;color:#fff!important;font:500 19px/1.2 'Saira Extra Condensed','Arial Narrow',sans-serif;text-decoration:none!important}#site-nav a:hover{background:#5d70c6}#site-nav a.active{background:#fff;color:#7387d4!important}@media(max-width:600px){#site-nav{position:static!important;gap:6px}#site-nav a{padding:5px 14px;font-size:17px}}";
   document.head.appendChild(st);
   }
   const link = (href, label, on) => `<a href="${href}"${on ? ' class="active"' : ""}>${label}</a>`;
   el.innerHTML = link("index.html", "Home", active === "home") + SITE.sections.map((s) =>
     link(`member.html?collection=${encodeURIComponent(s.collection)}`, s.label, active === s.collection)).join("");
+}
+
+// ---------- Page chrome: background, logo, section header banner, footer, dividers ----------
+(function () {
+  const bg = SITE.images.background;
+  document.documentElement.style.setProperty("--bg-image", bg ? `url("${bg}")` : "none");
+})();
+
+const siteEsc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+// One image slot: your image when a path is set, otherwise a labelled placeholder.
+function siteSlot(cls, src, label, dims, alt) {
+  return src
+    ? `<div class="slot ${cls} filled"><img src="${siteEsc(src)}" alt="${siteEsc(alt || "")}"></div>`
+    : `<div class="slot ${cls}">${siteEsc(label)}<br>${siteEsc(dims)}</div>`;
+}
+function dividerHtml() { return siteSlot("divider", SITE.images.divider, "DIVIDER PLACEHOLDER", "912 × 44 px", ""); }
+
+// Wraps the page's .wrap in the white box, with logo + section banner above and footer below.
+// Safe to call again when the section becomes known (profile pages do this after loading).
+function renderChrome(key) {
+  const wrap = document.querySelector(".wrap");
+  if (!wrap) return;
+  let stall = document.getElementById("stall");
+  if (!stall) {
+    stall = document.createElement("div");
+    stall.id = "stall";
+    stall.className = "stall";
+    wrap.before(stall);
+    stall.innerHTML = '<div id="chrome-logo"></div><div id="chrome-banner"></div>';
+    stall.append(wrap);
+    const f = document.createElement("div");
+    f.id = "chrome-footer";
+    stall.append(f);
+  }
+  const s = key && key !== "home" ? sectionOf(key) : null;
+  document.getElementById("chrome-logo").innerHTML = siteSlot("logo", SITE.images.logo, "LOGO PLACEHOLDER", "912 × 300 px", "The Brewery");
+  document.getElementById("chrome-banner").innerHTML = s
+    ? siteSlot("banner", s.banner, `${s.label.toUpperCase()} HEADER BANNER`, "912 × 140 px", s.label) : "";
+  document.getElementById("chrome-footer").innerHTML = siteSlot("footer", SITE.images.footer, "FOOTER BANNER PLACEHOLDER", "912 × 160 px", "");
+  wrap.querySelectorAll(".divider-host").forEach((h) => { h.innerHTML = dividerHtml(); });
 }
