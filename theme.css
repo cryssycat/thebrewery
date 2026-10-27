@@ -1,0 +1,136 @@
+/* Shared look for every public page (home, section galleries, profiles, worlds).
+   The old variable names are kept so any profile CSS that uses them still works. */
+:root{
+  --bg-deep:#4652a1;
+  --bg-panel:#fff;
+  --border:#d9defa;
+  --border-strong:#7387d4;
+  --text:#7387d4;
+  --text-dim:#8190d9;
+  --accent:#7387d4;
+  --accent-dim:#5d70c6;
+  --soft:#eef0fb;
+  --pink:#FDD0DA;
+  --radius:22px;
+  --stall-w:920px;   /* width of the white box. Banner images should be (this - 8px) wide. */
+  --pad:32px;        /* side padding inside the box */
+  font-family:'Saira Extra Condensed','Arial Narrow',sans-serif;
+}
+*{box-sizing:border-box}
+/* Background image comes from SITE.images.background in site.js. Solid indigo if it is missing. */
+body{margin:0;min-height:100vh;background:var(--bg-deep) var(--bg-image,none) repeat center top;color:var(--text);font-size:20px;line-height:1.35}
+a{color:var(--accent);text-decoration:none;font-weight:600}
+a:hover{color:var(--pink)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- The box ---------- */
+.stall{max-width:var(--stall-w);margin:24px auto 48px;background:#fff;border:4px solid var(--accent);border-radius:56px;overflow:hidden}
+.wrap{max-width:none;margin:0;padding:8px var(--pad) 40px}
+
+/* ---------- Image slots: logo, section header banner, footer, dividers ----------
+   Empty = soft placeholder box. Filled = your image at full width, natural height. */
+.slot{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--accent);font-size:17px;background:var(--soft);overflow:hidden}
+.slot img{width:100%;height:auto;display:block}
+.slot.logo{aspect-ratio:912/300}
+.slot.banner{aspect-ratio:912/140}
+.slot.footer{aspect-ratio:912/160}
+.slot.divider{height:44px;margin:20px calc(var(--pad) * -1);font-size:14px}
+.slot:not(.filled):not(.divider){box-shadow:inset 0 -3px 0 #fff}
+.slot.filled{display:block;aspect-ratio:auto;height:auto;background:none}
+.slot.filled.divider{height:auto}
+
+/* ---------- Cards / panels ---------- */
+.glass{background:#fff;border:2px solid var(--border);border-radius:var(--radius)}
+.glass.plain{border:0;background:none;border-radius:0}
+.back-link{font-size:18px;display:inline-block}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin:14px 0 18px}
+.top{display:flex;justify-content:flex-end;margin:14px 0 6px}
+.edit-link,.top #edit-link{align-items:center;gap:6px;padding:5px 16px;border-radius:999px;background:var(--accent);color:#fff!important;font-size:17px;font-weight:500;text-decoration:none!important}
+.edit-link{display:inline-flex}
+.top #edit-link{display:none} /* the home page script reveals it for signed-in editors */
+.edit-link:hover,.top #edit-link:hover{background:var(--accent-dim)}
+#edit-link-wrap{display:none}
+
+/* ---------- Home ---------- */
+#home-body{padding:6px 0 0;line-height:1.6;font-size:21px}
+#home-body img{max-width:100%;border-radius:12px}
+
+/* ---------- Section gallery (member.html) ---------- */
+#member-count{font-size:19px;text-align:center;margin:14px 0 22px}
+.search-input{display:block;width:100%;padding:11px 16px;margin-bottom:22px;background:#fff;border:2px solid var(--border);border-radius:999px;color:var(--text);font:inherit;font-size:20px;outline:none}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text-dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.grid.worlds{grid-template-columns:1fr}
+.card{display:block;position:relative;padding:16px;transition:border-color .15s,transform .1s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card-link{position:absolute;inset:0;z-index:1}
+.card-avatar{width:100%;aspect-ratio:1;border-radius:16px;background-size:cover;background-position:center;background-color:var(--soft);border:2px solid var(--border);margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:600;color:var(--text-dim)}
+.worlds .card-avatar{aspect-ratio:4/1;font-size:52px}
+.card-name{font-size:23px;font-weight:600;line-height:1.1;margin:0 0 4px}
+.worlds .card-name{font-size:28px}
+.card-meta{font-size:17px;color:var(--text-dim);margin:0}
+.card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.card-tag,.tag-pill{font-size:15px;padding:1px 12px;border-radius:999px;background:var(--soft);color:var(--text)}
+.card-edit{position:absolute;top:12px;right:12px;z-index:2;font-size:15px;color:#fff!important;padding:1px 12px;border-radius:999px;background:var(--accent);font-weight:500}
+.card-edit:hover{background:var(--accent-dim)}
+.folders .slot.divider{margin-top:10px}
+.folder{margin-bottom:6px}
+.folder summary{cursor:pointer;font-size:28px;font-weight:600;margin-bottom:12px;list-style:none}
+.folder summary::-webkit-details-marker{display:none}
+.folder summary::before{content:"\25B8  ";color:var(--pink)}
+.folder[open] summary::before{content:"\25BE  "}
+.subfolder{margin:4px 0 18px 14px;padding-left:16px;border-left:3px solid var(--border)}
+.subfolder summary{font-size:23px;font-weight:500}
+.folder .grid + .subfolder{margin-top:18px}
+.folder summary span{font-size:17px;color:var(--text-dim);font-weight:400;margin-left:8px}
+
+/* ---------- Profile + world pages ---------- */
+#header-card{padding:20px 28px}
+#char-name{font-size:38px;font-weight:600;line-height:1.05;margin:0 0 10px}
+.credits{display:flex;flex-wrap:wrap;gap:6px 22px}
+.credit-item{font-size:18px;color:var(--text-dim)}
+.credit-item strong{color:var(--text);font-weight:600}
+.tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#profile-card{padding:0;overflow:hidden}
+#profile-body{padding:26px 28px}
+.char-slot{line-height:1.6;font-size:20px}
+.char-slot img{max-width:100%;border-radius:12px}
+.char-slot h1,.char-slot h2,.char-slot h3{font-weight:600}
+.world-tabs,.gal-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.world-tabs button,.gal-tabs button{padding:5px 18px;border-radius:999px;border:2px solid var(--border);background:#fff;color:var(--text);font:inherit;font-size:18px;font-weight:500;cursor:pointer}
+.world-tabs button:hover,.gal-tabs button:hover{border-color:var(--accent)}
+.world-tabs button.active,.gal-tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+#gallery-section{padding:22px 28px}
+#gallery-section h2{font-size:28px;font-weight:600;margin:0 0 12px}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.gallery-thumb{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;border:2px solid var(--border);cursor:pointer;padding:0;background:none}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery-thumb:hover{border-color:var(--accent)}
+.gallery-thumb.nsfw img{filter:blur(22px);transform:scale(1.2)}
+.gallery-thumb.nsfw::after{content:"NSFW \2022 click to reveal";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:16px;color:#fff;background:rgba(70,82,161,.45);padding:8px}
+.gal-total{font-size:19px;color:var(--accent);margin:-4px 0 14px}
+.lightbox-overlay{position:fixed;inset:0;background:rgba(40,48,110,.88);display:flex;align-items:center;justify-content:center;padding:32px;z-index:1000}
+.lightbox-content{max-width:min(720px,90vw);max-height:85vh;display:flex;flex-direction:column;gap:10px;align-items:center}
+.lightbox-content img{max-width:100%;max-height:70vh;border-radius:14px;display:block}
+.lightbox-credit{font-size:18px;color:#fff;text-align:center}
+.lightbox-credit a{color:#FDD0DA}
+.lightbox-credit div{margin-bottom:2px}
+.lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#fff;font-size:34px;cursor:pointer;line-height:1}
+
+/* ---------- Loading / empty states ---------- */
+.state{text-align:center;padding:56px 24px;color:var(--text-dim);font-size:19px}
+.state .big{font-size:24px;color:var(--text);margin-bottom:6px}
+.skeleton-card{height:76px;border-radius:var(--radius)}
+.skeleton{height:18px;border-radius:8px;background:linear-gradient(90deg,rgba(115,135,212,.10),rgba(115,135,212,.24),rgba(115,135,212,.10));background-size:200% 100%;animation:shimmer 1.4s infinite;margin-bottom:10px}
+.skeleton-card .skeleton{height:100%;width:100%;margin:0;border-radius:var(--radius)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}}
+
+@media(max-width:600px){
+  :root{--pad:18px}
+  .stall{border-radius:36px;margin:14px 10px 32px}
+  #header-card,#gallery-section{padding:18px}
+  #profile-body{padding:20px 18px}
+  #char-name{font-size:32px}
+}
