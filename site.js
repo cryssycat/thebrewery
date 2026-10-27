@@ -1,5 +1,9 @@
 // Shared config + helpers for every page. Edit the section list and image paths here.
 const SITE = {
+
+   extraLinks: [
+    { label: "Carrd", href: "https://starbrew.carrd.co" },
+  ],
   // ----- Images (paths relative to the page). Leave "" to show a placeholder box. -----
   // Banner images are for the white box, which is 912 px wide inside its border (1824 px for sharp 2x).
   images: {
