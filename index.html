@@ -34,7 +34,7 @@ async function loadHome() {
   const p = parseProfile(c && c.profile_html);
   const has = c && p.body;
   document.getElementById("home-body").innerHTML = has ? p.body
-    : "<h1>Welcome to The Brewery</h1><p>Our characters, worlds, and mascots all live here. Pick a section above to start browsing.</p>";
+    : "<h1>Welcome to The Brewery</h1><p>Welcome to The Brewery, our little corner of the internet where all the things we dream up have a place to call home! This is where we keep the characters we've grown attached to, the worlds we've poured our hearts into, and the little mascots that have found their way into our lives. Some have stories we've spent years building, while others are simply here because they make us smile. Every character holds a little piece of our creativity, and we're happy to have somewhere to share them all. Feel free to poke around, get to know our little collection, and maybe find a new favorite along the way!</p>";
   if (has && c.profile_css) {
     const s = document.createElement("style");
     s.textContent = c.profile_css;
