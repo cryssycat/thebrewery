@@ -4,18 +4,19 @@ const SITE = {
   // Banner images are for the white box, which is 912 px wide inside its border (1824 px for sharp 2x).
   images: {
     background: "images/background.png",  // tiled behind everything; solid indigo if the file is missing
-    logo: "",     // top of every page   — 912 × 300 px
-    footer: "",   // bottom of every page — 912 × 160 px
-    divider: "",  // between blocks      — 912 × 44 px
+    logo: "images/IMG_2751.png",     // top of every page   — 912 × 300 px
+    footer: "images/IMG_2756.png",   // bottom of every page — 912 × 160 px
+    divider: "images/IMG_2754.png",  // between blocks      — 912 × 44 px
   },
   // Each section below also has a header banner: set  banner: "images/star.png"  (912 × 140 px).
   // collection = the value stored on each character. Change if yours differ.
   sections: [
-    { collection: "Star Characters", label: "Star's Characters", folders: true, banner: "" },
-    { collection: "Luna Characters", label: "Luna's Characters", folders: true, banner: "" },
-    { collection: "Couples", label: "Co-Owned Characters", coOwned: true, banner: "" },
-    { collection: "Worlds", label: "Worlds", worlds: true, banner: "" },
-    { collection: "Mascots", label: "Mascots", banner: "" },
+    { collection: "Star Characters", label: "Star's Characters", folders: true, banner: "images/IMG_2773.png" },
+    { collection: "Luna Characters", label: "Luna's Characters", folders: true, banner: "images/IMG_2774.png" },
+    { collection: "Couples", label: "Co-Owned Characters", coOwned: true, banner: "images/IMG_2775.png" },
+     { collection: "Mascots", label: "Mascots", banner: "images/IMG_2776.png" },
+    { collection: "Worlds", label: "Worlds", worlds: true, banner: "images/IMG_2778.png" },
+   
   ],
   homeCollection: "Site", homeSlug: "home",
   maxOwners: 5,
