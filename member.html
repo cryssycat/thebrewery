@@ -4,135 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Member gallery</title>
-<style>
-  :root{
-    --bg-deep:#0b1120;
-    --bg-panel:rgba(255,255,255,0.04);
-    --border:rgba(255,255,255,0.09);
-    --border-strong:rgba(255,255,255,0.18);
-    --text:#e7ecf5;
-    --text-dim:#8b94a8;
-    --accent:#7f9cf5;
-    --radius:14px;
-    font-family:-apple-system,"Segoe UI",Inter,sans-serif;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0;
-    min-height:100vh;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(127,156,245,0.10), transparent 40%),
-      radial-gradient(circle at 85% 90%, rgba(127,156,245,0.06), transparent 45%),
-      var(--bg-deep);
-    color:var(--text);
-  }
-  a{color:var(--accent);text-decoration:none}
-
-  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
-  .back-link{font-size:13px;color:var(--text-dim);display:inline-block;margin-bottom:20px}
-  .back-link:hover{text-decoration:underline}
-
-  #member-title{font-size:26px;font-weight:600;margin:0 0 6px}
-  #member-count{font-size:13px;color:var(--text-dim);margin:0 0 28px}
-
-  .glass{
-    background:var(--bg-panel);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-  }
-
-  .search-input{
-    display:block;
-    width:100%;
-    padding:11px 14px;
-    margin-bottom:20px;
-    background:rgba(255,255,255,0.03);
-    border:1px solid var(--border);
-    border-radius:10px;
-    color:var(--text);
-    font-size:14px;
-    outline:none;
-  }
-  .search-input:focus{border-color:var(--border-strong)}
-  .search-input::placeholder{color:var(--text-dim)}
-
-  .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
-    gap:16px;
-  }
-
-  .card{
-    display:block;
-    padding:18px;
-    transition:border-color .15s, transform .1s;
-  }
-  .card:hover{border-color:var(--border-strong);transform:translateY(-2px)}
-  .card-avatar{
-    width:100%;aspect-ratio:1;border-radius:10px;
-    background-size:cover;background-position:center;
-    background-color:rgba(255,255,255,0.06);
-    border:1px solid var(--border);
-    margin-bottom:12px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:36px;font-weight:600;color:var(--text-dim);
-  }
-  .card-name{font-size:15px;font-weight:500;color:var(--text);margin:0 0 6px}
-  .card-meta{font-size:12px;color:var(--text-dim)}
-  .card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-  .card-tag{
-    font-size:11px;padding:2px 8px;border-radius:999px;
-    border:1px solid var(--border);color:var(--text-dim);
-  }
-
-  .state{
-    text-align:center;
-    padding:64px 24px;
-    color:var(--text-dim);
-    font-size:14px;
-  }
-  .state .big{font-size:16px;color:var(--text);margin-bottom:6px}
-
-  .skeleton-card{height:76px;border-radius:var(--radius)}
-  .skeleton{
-    height:100%;width:100%;border-radius:var(--radius);
-    background:linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-    background-size:200% 100%;
-    animation:shimmer 1.4s infinite;
-  }
-  @keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-  @media (prefers-reduced-motion: reduce){ .skeleton{animation:none} }
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-  .card{position:relative}
-  .card-link{position:absolute;inset:0;z-index:1}
-  .card-edit{
-    position:absolute;
-    top:14px;right:14px;
-    z-index:2;
-    font-size:11px;
-    color:var(--text-dim);
-    padding:3px 9px;
-    border-radius:999px;
-    border:1px solid var(--border);
-    text-decoration:none;
-    background:var(--bg-panel);
-  }
-  .card-edit:hover{border-color:var(--border-strong);color:var(--text)}
-  .grid.worlds{grid-template-columns:1fr}
-  .worlds .card-avatar{aspect-ratio:4/1;font-size:48px}
-  .worlds .card-name{font-size:18px}
-  .folder{margin-bottom:22px}
-  .folder summary{cursor:pointer;font-size:16px;font-weight:600;margin-bottom:12px;list-style:none}
-  .folder summary::-webkit-details-marker{display:none}
-  .folder summary::before{content:"\25B8  ";color:var(--text-dim)}
-  .folder[open] summary::before{content:"\25BE  "}
-  .subfolder{margin:4px 0 18px 14px;padding-left:14px;border-left:1px solid var(--border)}
-  .subfolder summary{font-size:14px;font-weight:500;color:var(--text-dim)}
-  .folder .grid + .subfolder{margin-top:18px}
-  .folder summary span{font-size:12px;color:var(--text-dim);font-weight:400;margin-left:8px}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Saira+Extra+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
@@ -165,6 +38,7 @@ let isAuthed = false;
 let allCharacters = [];
 
 renderNav(collection);
+renderChrome(collection);
 checkAuth().then((authed) => {
   isAuthed = authed;
   if (collection) loadMember(collection);
@@ -224,7 +98,7 @@ function renderHeader(collection, count) {
   const s = sectionOf(collection), label = s ? s.label : collection, noun = s && s.worlds ? "world" : "character";
   document.title = `${label} — gallery`;
   document.getElementById("header").innerHTML = `
-    <h1 id="member-title">${escapeHtml(label)}</h1>
+    <h1 id="member-title" class="sr-only">${escapeHtml(label)}</h1>
     <p id="member-count">${count} public ${noun}${count === 1 ? "" : "s"}${isAuthed ? ` &middot; <a href="editor.html?new=1&collection=${encodeURIComponent(collection)}">+ New ${noun}</a>` : ""}</p>
   `;
 }
@@ -262,7 +136,7 @@ function renderGrid(characters, isSearchResult) {
         (loose.length ? `<div class="grid">${loose.map(card).join("")}</div>` : "") +
         subNames.map((s) => `<details class="subfolder" open><summary>${escapeHtml(s)}<span>${subs[s].length}</span></summary><div class="grid">${subs[s].map(card).join("")}</div></details>`).join("") +
         `</details>`;
-    }).join("");
+    }).join(dividerHtml());
   } else grid.innerHTML = characters.map(card).join("");
 }
 
